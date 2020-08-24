@@ -1,4 +1,4 @@
-# README #
+# COMP3888 Capstone Project #
 
 This README would normally document whatever steps are necessary to get your application up and running.
 
