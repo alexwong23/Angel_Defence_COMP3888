@@ -1,7 +1,6 @@
 # COMP3888 Capstone Project #
 
 This README would normally document whatever steps are necessary to get your application up and running.
-linked to slack!
 
 ### What is this repository for? ###
 
