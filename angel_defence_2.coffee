@@ -109,10 +109,6 @@
       log: console.log
       spawn: @spawnControllables.bind(@, hero, color)
       }
-    Object.defineProperty(game, 'roundTime', {
-      get: () => @gameTime(),
-      set: (x) => return 0
-    })
     aether = @world.userCodeMap[hero.id]?.plan
     esperEngine = aether?.esperEngine
     if esperEngine
@@ -163,15 +159,19 @@
   onFirstFrame: ->
     for th in @world.thangs when th.health? and not th.isProgrammable
       th.setExists(false)
-    @prepareRound()
+    @prepareGame()
 
   chooseAction: ->
-    if @roundStarted
+    if @gameStarted
       if not @neutralSpawned
         @spawnNeutrals()
       if not @potionSpawned
         @spawnPotions()
       @spawnCreeps()
+      # to do: move creep back to middle if stuck in neutral creep area
+      # for u in @creepsInGame when u.health > 0
+      #   if not u.isPathClear(u.pos, {"x": 70, "y": 55})
+      #     u.move({x: 40, y: 35})
       @clearField()
       @checkWinner()
 
@@ -179,6 +179,64 @@
     rectID = "pos-#{color}-#{n}"
     rect = @world.getThangByID(rectID)
     return rect.pos.copy()
+
+  prepareGame: ->
+    @creepsInGame = []
+    @unitsInGame = []
+
+    @rangel = @world.getThangByID("Red Angel")
+    @rruin = @world.getThangByID("Red Ruin")
+    @rruin.keepTrackedProperty("alpha")
+    @bangel = @world.getThangByID("Blue Angel")
+    @bruin = @world.getThangByID("Blue Ruin")
+    @bruin.keepTrackedProperty("alpha")
+    @hero.keepTrackedProperty("health")
+    @hero.keepTrackedProperty("maxHealth")
+    @hero2.keepTrackedProperty("health")
+    @hero2.keepTrackedProperty("maxHealth")
+
+    for th in @spawnPositions
+      th.setExists(true)
+      th.say?(th.index)
+      th.alpha = 0.5
+      th.keepTrackedProperty("alpha")
+    @ref.setExists(true)
+    @ref.say("RED vs BLUE")
+    @setTimeout((() => @ref.say(3)), 1)
+    @setTimeout((() => @ref.say(2)), 2)
+    @setTimeout((() => @ref.say(1)), 3)
+    @setTimeout((() => @ref.say("Fight!")), 4)
+    @setTimeout(@clearRects.bind(@), 1)
+    @setTimeout(@startGame.bind(@), 4)
+
+  clearField: ->
+    if @creepsInGame.length % 10 == 0
+      # console.log 'number of creeps in game is ', @creepsInGame.length
+      for u in @creepsInGame when u.health <= 0
+        u.setExists(false)
+
+  clearRects: ->
+    for s in @spawnPositions
+      s.alpha = 0
+      s.clearSpeech()
+      s.keepTrackedProperty("alpha")
+
+  startGame: () ->
+    @neutralSpawned = false
+    @potionSpawned = false
+    @gameStarted = true
+    @hero.maxSpeed = 20
+    @hero2.maxSpeed = 20
+    @ref.setExists(false)
+
+  checkWinner: () ->
+    return if not @gameStarted
+    if @rangel.health <= 0
+      @rangel.setExists(false)
+      @rruin.alpha = 1
+    else if @bangel.health <= 0
+      @bangel.setExists(false)
+      @bruin.alpha = 1
 
   setupUnit: (unit, unitType, color) ->
     params = @UNIT_PARAMETERS[unitType]
@@ -218,83 +276,6 @@
     unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
     @setupUnit(unit, unitType, color)
     return unit
-
-  prepareRound: ->
-    @rangel = @world.getThangByID("Red Angel")
-    @rruin = @world.getThangByID("Red Ruin")
-    @rruin.keepTrackedProperty("alpha")
-    @bangel = @world.getThangByID("Blue Angel")
-    @bruin = @world.getThangByID("Blue Ruin")
-    @bruin.keepTrackedProperty("alpha")
-
-    @hero.keepTrackedProperty("health")
-    @hero.keepTrackedProperty("maxHealth")
-    @hero2.keepTrackedProperty("health")
-    @hero2.keepTrackedProperty("maxHealth")
-
-    for th in @spawnPositions
-      th.setExists(true)
-      th.say?(th.index)
-      th.alpha = 0.5
-      th.keepTrackedProperty("alpha")
-    @creepsInGame = []
-    @unitsInGame = []
-    @ref.setExists(true)
-    @ref.say("RED vs BLUE")
-    @setTimeout((() => @ref.say(3)), 1)
-    @setTimeout((() => @ref.say(2)), 2)
-    @setTimeout((() => @ref.say(1)), 3)
-    @setTimeout((() => @ref.say("Fight!")), 4)
-    @setTimeout(@clearRects.bind(@), 1)
-    @setTimeout(@startRound.bind(@), 4)
-
-  clearField: ->
-    if @creepsInGame.length % 10 == 0
-      # console.log 'number of creeps in game is ', @creepsInGame.length
-      for u in @creepsInGame when u.health <= 0
-        u.setExists(false)
-
-  clearRects: ->
-    for s in @spawnPositions
-      s.alpha = 0
-      s.clearSpeech()
-      s.keepTrackedProperty("alpha")
-
-  gameTime: ->
-    if not @roundStarted
-      return 0
-    return @world.age - @roundStartTime
-
-  startRound: () ->
-    @neutralSpawned = false
-    @potionSpawned = false
-    @roundStarted = true
-    @roundStartTime = @world.age
-    @hero.maxSpeed = 20
-    @hero2.maxSpeed = 20
-    @ref.setExists(false)
-    for unit in @unitsInGame when unit
-      unit.startsPeaceful = false
-      unit.commander = null
-      # unit.isAttackable = false
-      # unit.trigger?("spawn")
-      fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
-      if fn and _.isFunction(fn)
-        if unit.color is "red"
-          unit.commander = @hero
-        if unit.color is "blue"
-          unit.commander = @hero2
-        unit.didTriggerSpawnEvent = true
-        unit.on("spawn", fn)
-
-  checkWinner: () ->
-    return if not @roundStarted
-    if @rangel.health <= 0
-      @rangel.setExists(false)
-      @rruin.alpha = 1
-    else if @bangel.health <= 0
-      @bangel.setExists(false)
-      @bruin.alpha = 1
 
   createNeutral: (unitType, color, posNumber) ->
       if not @UNIT_PARAMETERS[unitType]
@@ -340,6 +321,19 @@
       # spawn only one neutral
       @neutralSpawned = true
 
+  setUpCreep: (unit, patrolPoints) ->
+      # creeps should not be controllable but should have commander
+      unit.startsPeaceful = false
+      unit.commander = null
+      if unit.color is "red"
+        unit.commander = @hero
+      if unit.color is "blue"
+        unit.commander = @hero2
+      # unit.isAttackable = false
+      unit.patrolChaseRange = 20
+      unit.patrolPoints = patrolPoints
+      @creepsInGame.push(unit)
+
   spawnCreeps: () ->
       spawnRate = 0.05 + @world.age / 1000000  # Range from 0.333 to 1.333 enemies per second on each side
       shouldHaveSpawned = 3 + spawnRate * @world.age
@@ -347,14 +341,11 @@
       if shouldHaveSpawned > @built.length / 5
 
         redCreep = @createHumans("warrior", "red", 0)
-        redCreep.patrolChaseRange = 20
-        redCreep.patrolPoints = ([{"x": 70, "y": 55}])
-        @creepsInGame.push(redCreep)
+        @setUpCreep(redCreep, [{"x": 70, "y": 55}])
 
         blueCreep = @createHumans("warrior", "blue", 0)
-        blueCreep.patrolChaseRange = 20
-        blueCreep.patrolPoints = ([{"x": 12, "y": 12}])
-        @creepsInGame.push(blueCreep)
+        @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
+
 
     spawnPotions: () ->
         spawnRate = 0.05 + @world.age / 1000000  # Range from 0.333 to 1.333 enemies per second on each side
@@ -403,7 +394,7 @@
         unit.on(event, fn)
 
     spawnControllables: (hero, color, unitType) ->
-        return if not @roundStarted
+        return if not @gameStarted
         team: ""
         if color is "red"
           team = "humans"
