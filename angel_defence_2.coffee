@@ -224,9 +224,8 @@
 
   startGame: () ->
     @neutralSpawned = false
-    @potionFirstSpawned = false
-    @potionLeft = null
-    @potionRight = null
+    @potionRight = @createPotion({"x": 51, "y": 25})
+    @potionLeft = @createPotion({"x": 33, "y": 42})
     @gameStarted = true
     @hero.maxSpeed = 20
     @hero2.maxSpeed = 20
@@ -341,73 +340,30 @@
 
   spawnCreeps: () ->
       # round world.age to one decimal place
-      roundNum = Math.round(@world.age * 10) / 10
-      if roundNum % 5.0 == 0
+      spawnTime = Math.round(@world.age * 10) / 10
+      if spawnTime % 5.0 == 0
         redCreep = @createHumans("warrior", "red", 0)
         @setUpCreep(redCreep, [{"x": 70, "y": 55}])
 
         blueCreep = @createHumans("warrior", "blue", 0)
         @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
 
+  createPotion:(pos) ->
+      @build "health-potion-medium"
+      builtPotion = @performBuild()
+      builtPotion.team = 'neutral'
+      builtPotion.pos.x = pos.x
+      builtPotion.pos.y = pos.y
+      return builtPotion
+
   spawnPotions: () ->
       spawnTime = Math.round(@world.age * 10) / 10
-      if @potionFirstSpawned == false
-          @build "health-potion-medium"
-          built = @performBuild()
-          built.team = 'neutral'
-          built.pos.x = 51
-          built.pos.y = 25
-          if built.move
-            built.hasMoved = true
-          else
-            built.addTrackedProperties ['pos', 'Vector']
-            built.keepTrackedProperty 'pos'
-          @potionRight = built
+      if spawnTime % 30.0 == 0 # spawn potion every 30 sec
+        if @potionRight.exists == false
+          @potionRight = @createPotion({"x": 51, "y": 25})
 
-          @build "health-potion-medium"
-          built2 = @performBuild()
-          built2.team = 'neutral'
-          built2.pos.x = 33
-          built2.pos.y = 42
-          built2.hasMoved = true
-          if built2.move
-            built2.hasMoved = true
-          else
-            built2.addTrackedProperties ['pos', 'Vector']
-            built2.keepTrackedProperty 'pos'
-          @potionLeft = built2
-
-      else
-        if spawnTime % 30.0 == 0 # spawn potion every 30 sec
-          if @potionRight.exists == false
-            @build "health-potion-medium"
-            built = @performBuild()
-            built.team = 'neutral'
-            built.pos.x = 51
-            built.pos.y = 25
-            if built.move
-              built.hasMoved = true
-            else
-              built.addTrackedProperties ['pos', 'Vector']
-              built.keepTrackedProperty 'pos'
-            @potionRight = built
-
-          if @potionLeft.exists == false
-            @build "health-potion-medium"
-            built2 = @performBuild()
-            built2.team = 'neutral'
-            built2.pos.x = 33
-            built2.pos.y = 42
-            built2.hasMoved = true
-            if built2.move
-              built2.hasMoved = true
-            else
-              built2.addTrackedProperties ['pos', 'Vector']
-              built2.keepTrackedProperty 'pos'
-            @potionLeft = built2
-
-      # prevents accessing null value
-      @potionFirstSpawned = true
+        if @potionLeft.exists == false
+          @potionLeft = @createPotion({"x": 33, "y": 42})
 
   # USER
   setActionFor: (hero, color, type, event, fn) ->
