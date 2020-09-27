@@ -7,6 +7,13 @@
       attackRange: 5,
       speed: 10
     },
+    archer: {
+      health: 20,
+      damage: 10,
+      attackCooldown: 0.8,
+      attackRange: 15,
+      speed: 10
+    },
     knight: {
       health: 70,
       damage: 4,
@@ -25,13 +32,6 @@
       health: 10,
       damage: 20,
       attackCooldown: 4,
-      attackRange: 10,
-      speed: 10
-    },
-    archer: {
-      health: 20,
-      damage: 3,
-      attackCooldown: 0.5,
       attackRange: 10,
       speed: 10
     },
@@ -187,9 +187,11 @@
     @rangel = @world.getThangByID("Red Angel")
     @rruin = @world.getThangByID("Red Ruin")
     @rruin.keepTrackedProperty("alpha")
+    @rruin.setExists(false)
     @bangel = @world.getThangByID("Blue Angel")
     @bruin = @world.getThangByID("Blue Ruin")
     @bruin.keepTrackedProperty("alpha")
+    @bruin.setExists(false)
     @hero.keepTrackedProperty("health")
     @hero.keepTrackedProperty("maxHealth")
     @hero2.keepTrackedProperty("health")
@@ -233,9 +235,11 @@
     return if not @gameStarted
     if @rangel.health <= 0
       @rangel.setExists(false)
+      @rruin.setExists(true)
       @rruin.alpha = 1
     else if @bangel.health <= 0
       @bangel.setExists(false)
+      @bruin.setExists(true)
       @bruin.alpha = 1
 
   setupUnit: (unit, unitType, color) ->
@@ -312,11 +316,11 @@
       neutralUnit0 = @createNeutral(buildType, "green", 0)
       neutralUnit0.patrolChaseRange = 10
       neutralUnit0.patrolPoints = ([{"x": 5, "y": 60},
-                            {"x": 10, "y": 60}])
+                                    {"x": 10, "y": 60}])
       neutralUnit1 = @createNeutral(buildType, "green", 1)
       neutralUnit1.patrolChaseRange = 10
       neutralUnit1.patrolPoints = ([{"x": 75, "y": 10},
-                            {"x": 70, "y": 10}])
+                                    {"x": 70, "y": 10}])
 
       # spawn only one neutral
       @neutralSpawned = true
@@ -335,11 +339,9 @@
       @creepsInGame.push(unit)
 
   spawnCreeps: () ->
-      spawnRate = 0.05 + @world.age / 1000000  # Range from 0.333 to 1.333 enemies per second on each side
-      shouldHaveSpawned = 3 + spawnRate * @world.age
-      # console.log 'shouldHaveSpawned is ', shouldHaveSpawned, '@built.length is ', @built.length
-      if shouldHaveSpawned > @built.length / 5
-
+      # round world.age to one decimal place
+      roundNum = Math.round(@world.age * 10) / 10
+      if roundNum % 5.0 == 0
         redCreep = @createHumans("warrior", "red", 0)
         @setUpCreep(redCreep, [{"x": 70, "y": 55}])
 
@@ -347,78 +349,78 @@
         @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
 
 
-    spawnPotions: () ->
-        spawnRate = 0.05 + @world.age / 1000000  # Range from 0.333 to 1.333 enemies per second on each side
-        shouldHaveSpawned = 3 + spawnRate * @world.age
-        # console.log 'shouldHaveSpawned is ', shouldHaveSpawned, '@built.length is ', @built.length
-        if shouldHaveSpawned > @built.length / 5
+  spawnPotions: () ->
+      spawnRate = 0.05 + @world.age / 1000000  # Range from 0.333 to 1.333 enemies per second on each side
+      shouldHaveSpawned = 3 + spawnRate * @world.age
+      # console.log 'shouldHaveSpawned is ', shouldHaveSpawned, '@built.length is ', @built.length
+      if shouldHaveSpawned > @built.length / 5
 
-          # TO DO: use rand to spawn at either point
-          @build "health-potion-medium"
-          built = @performBuild()
-          built.team = 'neutral'
-          built.pos.x = 51
-          built.pos.y = 25
-          if built.move
-            built.hasMoved = true
-          else
-            built.addTrackedProperties ['pos', 'Vector']
-            built.keepTrackedProperty 'pos'
-
-          @build "health-potion-medium"
-          built2 = @performBuild()
-          built2.team = 'neutral'
-          built2.pos.x = 33
-          built2.pos.y = 42
-          built2.hasMoved = true
-          if built2.move
-            built2.hasMoved = true
-          else
-            built2.addTrackedProperties ['pos', 'Vector']
-            built2.keepTrackedProperty 'pos'
-
-          # spawn only one potion at a time
-          @potionSpawned = true
-
-    # USER
-    setActionFor: (hero, color, type, event, fn) ->
-      # TODO event type checking
-      @actionHelpers[color][type] ?= {}
-      # @actionHelpers[color][type][event] ?= []
-      @actionHelpers[color][type][event] = fn
-      for unit in @world.thangs when unit.type is type and unit.exists
-        if not unit.on
-          console.warn("#{type} need hasEvent")
-          continue
-        unit.off(event)
-        unit.on(event, fn)
-
-    spawnControllables: (hero, color, unitType) ->
-        return if not @gameStarted
-        team: ""
-        if color is "red"
-          team = "humans"
+        # TO DO: use rand to spawn at either point
+        @build "health-potion-medium"
+        built = @performBuild()
+        built.team = 'neutral'
+        built.pos.x = 51
+        built.pos.y = 25
+        if built.move
+          built.hasMoved = true
         else
-          team = "ogres"
-        if not unitType or not @UNIT_PARAMETERS[unitType]
-          unitType = "warrior"
+          built.addTrackedProperties ['pos', 'Vector']
+          built.keepTrackedProperty 'pos'
 
-        fullType = "#{unitType}-#{color}"
-        #console.log unitType, ' requires gold cost ', @buildables[fullType].goldCost
-        if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost
-          @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
-          unit = @createHumans(unitType, color, 1)
-          unit.startsPeaceful = false
-          unit.commander = null
-          fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
-          if fn and _.isFunction(fn)
-             if unit.color is "red"
-               unit.commander = @hero
-             if unit.color is "blue"
-               unit.commander = @hero2
-             unit.didTriggerSpawnEvent = true
-             #unit.off("spawn")
-             unit.on("spawn", fn)
+        @build "health-potion-medium"
+        built2 = @performBuild()
+        built2.team = 'neutral'
+        built2.pos.x = 33
+        built2.pos.y = 42
+        built2.hasMoved = true
+        if built2.move
+          built2.hasMoved = true
+        else
+          built2.addTrackedProperties ['pos', 'Vector']
+          built2.keepTrackedProperty 'pos'
 
-          @unitsInGame.push(unit)
+        # spawn only one potion at a time
+        @potionSpawned = true
+
+  # USER
+  setActionFor: (hero, color, type, event, fn) ->
+    # TODO event type checking
+    @actionHelpers[color][type] ?= {}
+    # @actionHelpers[color][type][event] ?= []
+    @actionHelpers[color][type][event] = fn
+    for unit in @world.thangs when unit.type is type and unit.exists
+      if not unit.on
+        console.warn("#{type} need hasEvent")
+        continue
+      unit.off(event)
+      unit.on(event, fn)
+
+  spawnControllables: (hero, color, unitType) ->
+      return if not @gameStarted
+      team: ""
+      if color is "red"
+        team = "humans"
+      else
+        team = "ogres"
+      if not unitType or not @UNIT_PARAMETERS[unitType]
+        unitType = "warrior"
+
+      fullType = "#{unitType}-#{color}"
+      #console.log unitType, ' requires gold cost ', @buildables[fullType].goldCost
+      if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost
+        @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
+        unit = @createHumans(unitType, color, 1)
+        unit.startsPeaceful = false
+        unit.commander = null
+        fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
+        if fn and _.isFunction(fn)
+           if unit.color is "red"
+             unit.commander = @hero
+           if unit.color is "blue"
+             unit.commander = @hero2
+           unit.didTriggerSpawnEvent = true
+           #unit.off("spawn")
+           unit.on("spawn", fn)
+
+        @unitsInGame.push(unit)
 }
