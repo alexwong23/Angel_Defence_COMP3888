@@ -240,12 +240,14 @@
   checkDeath: () ->
     # Check if red team has killed an unit
     for unit in @redNeutral
+      console.log unit.health
       if unit.health <= 0
         @inventory.addGoldForTeam "humans", 10, false  #replace 10 with the cost of unit
         @redNeutral = (x for x in @redNeutral when x != unit)
         
     # Check if blue team has killed an unit    
     for unit in @blueNeutral
+    
       if unit.health <= 0
         @inventory.addGoldForTeam "ogres", 10, false  #replace 10 with the cost of unit
         @blueNeutral = (x for x in @blueNeutral when x != unit)
@@ -275,6 +277,18 @@
     if color is "blue"
       unit.commander = @hero1
     unit.didTriggerSpawnEvent = true
+    unit.startsPeaceful = false
+    unit.commander = null
+    unit.isAttackable = false
+    # unit.trigger?("spawn")
+    fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
+    if fn and _.isFunction(fn)
+      if unit.color is "red"
+        unit.commander = @hero
+      if unit.color is "blue"
+        unit.commander = @hero2
+      unit.didTriggerSpawnEvent = true
+      unit.on("spawn", fn)
     
   getPosXY: (color, n) ->
     rectID = "pos-#{color}-#{n}"
@@ -359,34 +373,49 @@
     if @gameStart
       @spawnNeutrals()
       @checkDeath()
-      
+      team: ""
       #check player call 'add': USER_FLAG=1: called, USER_FLAG=2: not
       if @ARCHER_USER_FLAG == 1
-        @createUnit(@ARCHER_USER_TYPE, @ARCHER_USER_COLOR, @ARCHER_USER_POS)
-        
-        #reset flags to default
-        @ARCHER_USER_FLAG = 0
-        @ARCHER_USER_TYPE = "archer"
-        @ARCHER_USER_COLOR = "red"
-        @ARCHER_USER_POS = 0
+        if @ARCHER_USER_COLOR  == "red"
+          team = "humans"
+        else
+          team = "ogres"
+        if @inventory.goldForTeam(team) >= 10
+          @createUnit(@ARCHER_USER_TYPE, @ARCHER_USER_COLOR, @ARCHER_USER_POS)
+          @inventory.subtractGoldForTeam team,10
+          #reset flags to default
+          @ARCHER_USER_FLAG = 0
+          @ARCHER_USER_TYPE = "archer"
+          @ARCHER_USER_COLOR = "red"
+          @ARCHER_USER_POS = 0
         
       if @WARRIOR_USER_FLAG == 1
-        @createUnit(@WARRIOR_USER_TYPE, @WARRIOR_USER_COLOR, @WARRIOR_USER_POS)
-        
-        #reset flags to default
-        @WARRIOR_USER_FLAG = 0
-        @WARRIOR_USER_TYPE = "archer"
-        @WARRIOR_USER_COLOR = "red"
-        @WARRIOR_USER_POS = 0
+        if @WARRIOR_USER_COLOR  == "red"
+          team = "humans"
+        else
+          team = "ogres"
+        if @inventory.goldForTeam(team) >= 10
+          @createUnit(@WARRIOR_USER_TYPE, @WARRIOR_USER_COLOR, @WARRIOR_USER_POS)
+          @inventory.subtractGoldForTeam team, 10
+          #reset flags to default
+          @WARRIOR_USER_FLAG = 0
+          @WARRIOR_USER_TYPE = "archer"
+          @WARRIOR_USER_COLOR = "red"
+          @WARRIOR_USER_POS = 0
         
       if @WIZARD_USER_FLAG == 1
-        @createUnit(@WIZARD_USER_TYPE, @WIZARD_USER_COLOR, @WIZARD_USER_POS)
-        
-        #reset flags to default
-        @WIZARD_USER_FLAG = 0
-        @WIZARD_USER_TYPE = "archer"
-        @WIZARD_USER_COLOR = "red"
-        @WIZARD_USER_POS = 0
+        if @WIZARD_USER_COLOR  == "red"
+          team = "humans"
+        else
+          team = "ogres"
+        if @inventory.goldForTeam(team) >= 10
+          @createUnit(@WIZARD_USER_TYPE, @WIZARD_USER_COLOR, @WIZARD_USER_POS)
+          @inventory.subtractGoldForTeam team, 10
+          #reset flags to default
+          @WIZARD_USER_FLAG = 0
+          @WIZARD_USER_TYPE = "archer"
+          @WIZARD_USER_COLOR = "red"
+          @WIZARD_USER_POS = 0
       
       #Update health
       @hero.health = @rangel.health
