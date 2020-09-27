@@ -165,8 +165,7 @@
     if @gameStarted
       if not @neutralSpawned
         @spawnNeutrals()
-      if not @potionSpawned
-        @spawnPotions()
+      @spawnPotions()
       @spawnCreeps()
       # to do: move creep back to middle if stuck in neutral creep area
       # for u in @creepsInGame when u.health > 0
@@ -225,7 +224,9 @@
 
   startGame: () ->
     @neutralSpawned = false
-    @potionSpawned = false
+    @potionFirstSpawned = false
+    @potionLeft = null
+    @potionRight = null
     @gameStarted = true
     @hero.maxSpeed = 20
     @hero2.maxSpeed = 20
@@ -348,39 +349,65 @@
         blueCreep = @createHumans("warrior", "blue", 0)
         @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
 
-
   spawnPotions: () ->
-      spawnRate = 0.05 + @world.age / 1000000  # Range from 0.333 to 1.333 enemies per second on each side
-      shouldHaveSpawned = 3 + spawnRate * @world.age
-      # console.log 'shouldHaveSpawned is ', shouldHaveSpawned, '@built.length is ', @built.length
-      if shouldHaveSpawned > @built.length / 5
+      spawnTime = Math.round(@world.age * 10) / 10
+      if @potionFirstSpawned == false
+          @build "health-potion-medium"
+          built = @performBuild()
+          built.team = 'neutral'
+          built.pos.x = 51
+          built.pos.y = 25
+          if built.move
+            built.hasMoved = true
+          else
+            built.addTrackedProperties ['pos', 'Vector']
+            built.keepTrackedProperty 'pos'
+          @potionRight = built
 
-        # TO DO: use rand to spawn at either point
-        @build "health-potion-medium"
-        built = @performBuild()
-        built.team = 'neutral'
-        built.pos.x = 51
-        built.pos.y = 25
-        if built.move
-          built.hasMoved = true
-        else
-          built.addTrackedProperties ['pos', 'Vector']
-          built.keepTrackedProperty 'pos'
-
-        @build "health-potion-medium"
-        built2 = @performBuild()
-        built2.team = 'neutral'
-        built2.pos.x = 33
-        built2.pos.y = 42
-        built2.hasMoved = true
-        if built2.move
+          @build "health-potion-medium"
+          built2 = @performBuild()
+          built2.team = 'neutral'
+          built2.pos.x = 33
+          built2.pos.y = 42
           built2.hasMoved = true
-        else
-          built2.addTrackedProperties ['pos', 'Vector']
-          built2.keepTrackedProperty 'pos'
+          if built2.move
+            built2.hasMoved = true
+          else
+            built2.addTrackedProperties ['pos', 'Vector']
+            built2.keepTrackedProperty 'pos'
+          @potionLeft = built2
 
-        # spawn only one potion at a time
-        @potionSpawned = true
+      else
+        if spawnTime % 30.0 == 0 # spawn potion every 30 sec
+          if @potionRight.exists == false
+            @build "health-potion-medium"
+            built = @performBuild()
+            built.team = 'neutral'
+            built.pos.x = 51
+            built.pos.y = 25
+            if built.move
+              built.hasMoved = true
+            else
+              built.addTrackedProperties ['pos', 'Vector']
+              built.keepTrackedProperty 'pos'
+            @potionRight = built
+
+          if @potionLeft.exists == false
+            @build "health-potion-medium"
+            built2 = @performBuild()
+            built2.team = 'neutral'
+            built2.pos.x = 33
+            built2.pos.y = 42
+            built2.hasMoved = true
+            if built2.move
+              built2.hasMoved = true
+            else
+              built2.addTrackedProperties ['pos', 'Vector']
+              built2.keepTrackedProperty 'pos'
+            @potionLeft = built2
+
+      # prevents accessing null value
+      @potionFirstSpawned = true
 
   # USER
   setActionFor: (hero, color, type, event, fn) ->
