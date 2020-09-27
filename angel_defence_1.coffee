@@ -180,8 +180,8 @@
         else
           break
       
-      @redNeutral = []  
-      @blueNeutral = []
+      # @redNeutral = []  
+      # @blueNeutral = []
     
       unit = @createNeutral(buildType, "green", 0)
       @redNeutral.push unit
@@ -209,6 +209,33 @@
     @WIZARD_USER_POS = pos
     @WIZARD_USER_COLOR = color
   
+  spawnControllables: (hero, color, unitType, posNumber) ->
+    return if not @gameStart
+    team: ""
+    if color is "red"
+      team = "humans"
+    else
+      team = "ogres"
+    if not unitType or not @FRIEND_UNIT[unitType]
+      unitType = "warrior"
+
+    fullType = "#{unitType}-#{color}"
+    rectID = "pos-#{color}-#{posNumber}"
+    if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost and @spawnPositionCounters[rectID]<@MAX_UNITS_PER_CELL
+      unit = @createUnit(unitType, color, posNumber)
+      @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
+      unit.startsPeaceful = false
+      unit.commander = null
+      fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
+      if fn and _.isFunction(fn)
+        if unit.color is "red"
+          unit.commander = @hero
+        if unit.color is "blue"
+          unit.commander = @hero2
+          unit.didTriggerSpawnEvent = true
+          unit.on("spawn", fn)
+          
+
 
     
   setupGlobal: (hero, color) ->
@@ -218,6 +245,7 @@
       addArcher: @addArcher.bind(@, hero, color)
       addWarrior: @addWarrior.bind(@, hero, color)
       addWizard: @addWizard.bind(@, hero, color)
+      spawn: @spawnControllables.bind(@, hero, color)
       }
 
     aether = @world.userCodeMap[hero.id]?.plan
@@ -275,20 +303,8 @@
     if color is "red"
       unit.commander = @hero
     if color is "blue"
-      unit.commander = @hero1
+      unit.commander = @hero2
     unit.didTriggerSpawnEvent = true
-    unit.startsPeaceful = false
-    unit.commander = null
-    unit.isAttackable = false
-    # unit.trigger?("spawn")
-    fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
-    if fn and _.isFunction(fn)
-      if unit.color is "red"
-        unit.commander = @hero
-      if unit.color is "blue"
-        unit.commander = @hero2
-      unit.didTriggerSpawnEvent = true
-      unit.on("spawn", fn)
     
   getPosXY: (color, n) ->
     rectID = "pos-#{color}-#{n}"
@@ -300,17 +316,16 @@
       unitType = "archer"
     
     rectID = "pos-#{color}-#{posNumber}"
+    
+    unit = NaN
     if @spawnPositionCounters[rectID]<@MAX_UNITS_PER_CELL
       pos = @getPosXY(color, posNumber)
       fullType = "#{unitType}-#{color}"
       unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
       @setupUnit(unit, unitType, color)
-      
-      
-
       @spawnPositionCounters[rectID] += 1
-      return unit
-    return
+     
+    return unit
   
   #################################
   setUpLevel: ->
@@ -367,56 +382,13 @@
     
     #clear spawn position
     @setTimeout(@invisibleSpawnPos.bind(@), 2)
-    @setTimeout(@setGameStart.bind(@), 2)
+    @setTimeout(@setGameStart.bind(@), 3)
 
   chooseAction: ->
     if @gameStart
       @spawnNeutrals()
       @checkDeath()
-      team: ""
-      #check player call 'add': USER_FLAG=1: called, USER_FLAG=2: not
-      if @ARCHER_USER_FLAG == 1
-        if @ARCHER_USER_COLOR  == "red"
-          team = "humans"
-        else
-          team = "ogres"
-        if @inventory.goldForTeam(team) >= 10
-          @createUnit(@ARCHER_USER_TYPE, @ARCHER_USER_COLOR, @ARCHER_USER_POS)
-          @inventory.subtractGoldForTeam team,10
-          #reset flags to default
-          @ARCHER_USER_FLAG = 0
-          @ARCHER_USER_TYPE = "archer"
-          @ARCHER_USER_COLOR = "red"
-          @ARCHER_USER_POS = 0
-        
-      if @WARRIOR_USER_FLAG == 1
-        if @WARRIOR_USER_COLOR  == "red"
-          team = "humans"
-        else
-          team = "ogres"
-        if @inventory.goldForTeam(team) >= 10
-          @createUnit(@WARRIOR_USER_TYPE, @WARRIOR_USER_COLOR, @WARRIOR_USER_POS)
-          @inventory.subtractGoldForTeam team, 10
-          #reset flags to default
-          @WARRIOR_USER_FLAG = 0
-          @WARRIOR_USER_TYPE = "archer"
-          @WARRIOR_USER_COLOR = "red"
-          @WARRIOR_USER_POS = 0
-        
-      if @WIZARD_USER_FLAG == 1
-        if @WIZARD_USER_COLOR  == "red"
-          team = "humans"
-        else
-          team = "ogres"
-        if @inventory.goldForTeam(team) >= 10
-          @createUnit(@WIZARD_USER_TYPE, @WIZARD_USER_COLOR, @WIZARD_USER_POS)
-          @inventory.subtractGoldForTeam team, 10
-          #reset flags to default
-          @WIZARD_USER_FLAG = 0
-          @WIZARD_USER_TYPE = "archer"
-          @WIZARD_USER_COLOR = "red"
-          @WIZARD_USER_POS = 0
-      
+
       #Update health
       @hero.health = @rangel.health
       @hero.keepTrackedProperty("health")
