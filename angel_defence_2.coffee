@@ -8,39 +8,39 @@
       speed: 20,
     },
     warrior: {
-      health: 40,
+      health: 50,
       damage: 8,
       attackCooldown: 1.5,
       attackRange: 5,
-      speed: 10
+      speed: 15
     },
     archer: {
-      health: 20,
+      health: 30,
       damage: 10,
-      attackCooldown: 0.8,
+      attackCooldown: 1.2,
       attackRange: 15,
-      speed: 10
+      speed: 20
     },
     knight: {
-      health: 70,
-      damage: 4,
-      attackCooldown: 1,
+      health: 100,
+      damage: 8,
+      attackCooldown: 1.7,
       attackRange: 5,
-      speed: 10
+      speed: 12
     },
     thief: {
-      health: 20,
+      health: 30,
       damage: 10,
       attackCooldown: 0.5,
       attackRange: 4,
-      speed: 20
+      speed: 30
     },
     wizard: {
-      health: 10,
+      health: 15,
       damage: 20,
       attackCooldown: 4,
       attackRange: 10,
-      speed: 10
+      speed: 15
     },
     thrower: {
       health: 25,
@@ -75,35 +75,28 @@
       damage: 8,
       attackCooldown: 1.5,
       attackRange: 5,
-      speed: 50
+      speed: 15
     },
     fmunchkin: {
       health: 40,
       damage: 8,
       attackCooldown: 1.5,
       attackRange: 5,
-      speed: 50
+      speed: 15
     },
     bthrower: {
-      health: 25,
-      damage: 7,
-      attackCooldown: 0.7,
+      health: 30,
+      damage: 10,
+      attackCooldown: 1.2,
       attackRange: 10,
-      speed: 50
+      speed: 20
     },
     brawler: {
       health: 100,
       damage: 20,
-      attackCooldown: 1.5,
+      attackCooldown: 2.5,
       attackRange: 5,
-      speed: 30
-    },
-    headhunter: {
-      health: 80,
-      damage: 12,
-      attackCooldown: 1,
-      attackRange: 5,
-      speed: 50
+      speed: 10
     }
   }
 
@@ -310,48 +303,6 @@
     @setupUnit(unit, unitType, color)
     return unit
 
-  createNeutral: (unitType, color, posNumber) ->
-    if not @UNIT_PARAMETERS[unitType]
-      unitType = "munchkin"
-    pos = @getPosXY(color, posNumber)
-    fullType = "#{unitType}-#{color}"
-    @unitCounter[fullType] ?= 0
-    @buildables[fullType].ids = ["#{fullType}-#{@unitCounter[fullType]}"]
-    @unitCounter[fullType]++
-    unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
-    neutralUnit = @setupUnit(unit, unitType, color)
-    neutralUnit.patrolChaseRange = 10
-    @creepsInGame.push(unit)
-    return neutralUnit
-
-  spawnNeutralChance: () ->
-    spawnChances = [
-      [0, 'fmunchkin']
-      [50, 'mmunchkin']
-      [80, 'bthrower']
-      [85, 'brawler']
-      [99, 'headhunter'] # to do: remove broken enemy!
-    ]
-    n = 100 * @world.rand.randf()
-    for [spawnChance, type] in spawnChances
-      if n >= spawnChance
-        return type
-      else
-        return "fmunchkin"
-
-  spawnNeutrals: () ->
-    spawnTime = Math.round(@world.age * 10) / 10
-    if spawnTime % 15.0 == 0 # spawn potion every 15 sec
-      buildType = @spawnNeutralChance()
-      if @neutralTop.health < 1
-        @neutralTop = @createNeutral(buildType, "green", 0)
-        @neutralTop.patrolPoints = ([{"x": 5, "y": 60},
-                                      {"x": 10, "y": 60}])
-      if @neutralBtm.health < 1
-        @neutralBtm = @createNeutral(buildType, "green", 1)
-        @neutralBtm.patrolPoints = ([{"x": 75, "y": 10},
-                                      {"x": 70, "y": 10}])
-
   setUpCreep: (unit, patrolPoints) ->
     # creeps should not be controllable but should have commander
     unit.startsPeaceful = false
@@ -374,6 +325,47 @@
       blueCreep = @createHumans("warrior", "blue", 0)
       @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
 
+  createNeutral: (unitType, color, posNumber) ->
+    if not @UNIT_PARAMETERS[unitType]
+      unitType = "munchkin"
+    pos = @getPosXY(color, posNumber)
+    fullType = "#{unitType}-#{color}"
+    @unitCounter[fullType] ?= 0
+    @buildables[fullType].ids = ["#{fullType}-#{@unitCounter[fullType]}"]
+    @unitCounter[fullType]++
+    unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
+    neutralUnit = @setupUnit(unit, unitType, color)
+    neutralUnit.patrolChaseRange = 10
+    @creepsInGame.push(unit)
+    return neutralUnit
+
+  spawnNeutralChance: () ->
+    spawnChances = [
+      [0, 'fmunchkin']
+      [50, 'mmunchkin']
+      [80, 'bthrower']
+      [90, 'brawler']
+    ]
+    n = 100 * @world.rand.randf()
+    for [spawnChance, type] in spawnChances
+      if n >= spawnChance
+        return type
+      else
+        return "fmunchkin"
+
+  spawnNeutrals: () ->
+    spawnTime = Math.round(@world.age * 10) / 10
+    if spawnTime % 15.0 == 0 # spawn potion every 15 sec
+      buildType = @spawnNeutralChance()
+      if @neutralTop.health < 1
+        @neutralTop = @createNeutral(buildType, "green", 0)
+        @neutralTop.patrolPoints = ([{"x": 5, "y": 60},
+                                      {"x": 10, "y": 60}])
+      if @neutralBtm.health < 1
+        @neutralBtm = @createNeutral(buildType, "green", 1)
+        @neutralBtm.patrolPoints = ([{"x": 75, "y": 10},
+                                      {"x": 70, "y": 10}])
+
   createPotion:(pos) ->
     @build "health-potion-medium"
     builtPotion = @performBuild()
@@ -385,7 +377,7 @@
   spawnPotions: () ->
     spawnTime = Math.round(@world.age * 10) / 10
     if spawnTime % 30.0 == 0 # spawn potion every 30 sec
-      if @potionRight.health == false
+      if @potionRight.exists == false
         @potionRight = @createPotion({"x": 51, "y": 25})
 
       if @potionLeft.exists == false
