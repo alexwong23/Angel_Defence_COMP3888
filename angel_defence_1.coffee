@@ -1,6 +1,5 @@
 {
   FRIEND_UNIT: {
-    #plaer units
     warrior: {
       health: 40,
       damage: 15,
@@ -28,7 +27,6 @@
   }
   
   ENEMY_UNIT: {
-    #Enemy units
     thrower: {
       health: 25,
       damage: 7,
@@ -108,6 +106,12 @@
       @greenSpawnPositions.push(th)
     @redBluePositions = @redSpawnPositions.concat(@blueSpawnPositions)
     @spawnPositions = @redBluePositions.concat(@greenSpawnPositions)
+    for th in @spawnPositions
+      th.setExists(true)
+      th.say?(th.index)
+      th.alpha = 0.5
+      th.keepTrackedProperty("alpha")
+      @spawnPositionCounters[th.id] = 0
     
 
 
@@ -210,7 +214,8 @@
     @WIZARD_USER_COLOR = color
   
   spawnControllables: (hero, color, unitType, posNumber) ->
-    return if not @gameStart
+    #return if not @gameStart
+    # console.log("I AM USING SPAWN")
     team: ""
     if color is "red"
       team = "humans"
@@ -221,24 +226,30 @@
 
     fullType = "#{unitType}-#{color}"
     rectID = "pos-#{color}-#{posNumber}"
+    # console.log("I AM USING SPAWN 1"+ @spawnPositionCounters[rectID]+@MAX_UNITS_PER_CELL)
     if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost and @spawnPositionCounters[rectID]<@MAX_UNITS_PER_CELL
       unit = @createUnit(unitType, color, posNumber)
+      console.log("CHECKING CREATE"+unit.type+unit.color)
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
       unit.startsPeaceful = false
       unit.commander = null
-      fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
-      if fn and _.isFunction(fn)
-        if unit.color is "red"
-          unit.commander = @hero
-        if unit.color is "blue"
-          unit.commander = @hero2
-          unit.didTriggerSpawnEvent = true
-          unit.on("spawn", fn)
-          
-
-
+      if unit.color is "red"
+        # unit.commander = @hero
+        # unit.didTriggerSpawnEvent = true
+        
+        @redPlayerUnit.push(unit)
+        @redPos.push(posNumber)
+      if unit.color is "blue"
+        # unit.commander = @hero2
+        # unit.didTriggerSpawnEvent = true
+        
+        @bluePlayerUnit.push(unit)
+        @bluePos.push(posNumber)
+ 
+      
     
   setupGlobal: (hero, color) ->
+   
     game = {
       randInt: @world.rand.rand2,
       log: console.log,
@@ -300,11 +311,16 @@
       unit.actions.attack.cooldown = params.attackCooldown
     unit.type = unitType
     unit.color = color
-    if color is "red"
-      unit.commander = @hero
-    if color is "blue"
-      unit.commander = @hero2
-    unit.didTriggerSpawnEvent = true
+ 
+    # unit.trigger?("spawn")
+    fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
+    if fn and _.isFunction(fn)
+      if unit.color is "red"
+        unit.commander = @hero
+      if unit.color is "blue"
+        unit.commander = @hero2
+      unit.didTriggerSpawnEvent = true
+      unit.on("spawn", fn)
     
   getPosXY: (color, n) ->
     rectID = "pos-#{color}-#{n}"
@@ -318,14 +334,27 @@
     rectID = "pos-#{color}-#{posNumber}"
     
     unit = NaN
-    if @spawnPositionCounters[rectID]<@MAX_UNITS_PER_CELL
-      pos = @getPosXY(color, posNumber)
-      fullType = "#{unitType}-#{color}"
-      unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
-      @setupUnit(unit, unitType, color)
-      @spawnPositionCounters[rectID] += 1
+    #if @spawnPositionCounters[rectID]<@MAX_UNITS_PER_CELL
+    pos = @getPosXY(color, posNumber)
+    fullType = "#{unitType}-#{color}"
+    unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
+    @setupUnit(unit, unitType, color)
+    @spawnPositionCounters[rectID] += 1
      
     return unit
+  
+  checkSpawn:()-> 
+    i=0
+    console.log("BUTTUERBUTTER "+@bluePos.length+@bluePlayerUnit.length)
+    for unit in @bluePlayerUnit
+      console.log(unit.type+"BUTTUERBUTTER"+unit.color+" "+@bluePos[i])
+      @createUnit(unit.type, unit.color, @bluePos[i])
+      i+=1
+    i=0
+    for unit in @redPlayerUnit      
+      console.log(unit.type+"HEREHERHERHER"+unit.color+" "+@redPos[i])
+      @createUnit(unit.type, unit.color, @redPos[i])
+      i+=1
   
   #################################
   setUpLevel: ->
@@ -340,8 +369,11 @@
       "red": {}
       "blue": {}
       }
+    @setSpawnPositions()
     @setupGlobal(@hero, "red")
     @setupGlobal(@hero2, "blue")
+    @hero.gold = 100
+    @hero2.gold = 100
     @ref.say("Battle start!")
     @hero.isAttackable = false
     @hero.health = 2
@@ -352,20 +384,25 @@
     @inventory = @world.getSystem 'Inventory'
     @redNeutral = []
     @blueNeutral = []
-    @setSpawnPositions()
+   # @setSpawnPositions()
     @gameStart = false
+   
+    @redPlayerUnit=[]#only be used in checkSpawn
+    @redPos=[] #only be used in checkSpawn
+    @bluePlayerUnit=[] #only be used in checkSpawn
+    @bluePos=[] #only be used in checkSpawn
     
   onFirstFrame: ->
     for th in @world.thangs when th.health? and not th.isProgrammable
       th.setExists(false)
     
     #show spawnPosition to player
-    for th in @spawnPositions
-      th.setExists(true)
-      th.say?(th.index)
-      th.alpha = 0.5
-      th.keepTrackedProperty("alpha")
-      @spawnPositionCounters[th.id] = 0
+    # for th in @spawnPositions
+    #   th.setExists(true)
+    #   th.say?(th.index)
+    #   th.alpha = 0.5
+    #   th.keepTrackedProperty("alpha")
+    #   @spawnPositionCounters[th.id] = 0
     @ref.setExists(true)
     
     #bind angel hp with hero hp
@@ -382,7 +419,9 @@
     
     #clear spawn position
     @setTimeout(@invisibleSpawnPos.bind(@), 2)
+    @checkSpawn()
     @setTimeout(@setGameStart.bind(@), 3)
+    
 
   chooseAction: ->
     if @gameStart
