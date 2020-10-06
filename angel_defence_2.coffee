@@ -5,7 +5,7 @@
       damage: 25,
       attackCooldown: 1,
       attackRange: 5,
-      speed: 20,
+      speed: 25,
     },
     warrior: {
       health: 50,
@@ -46,22 +46,22 @@
       health: 25,
       damage: 7,
       attackCooldown: 0.7,
-      attackRange: 5,
-      speed: 10
+      attackRange: 8,
+      speed: 30
     },
     buffer: {
       health: 10,
-      damage: 2,
-      attackCooldown: 0.5,
+      damage: 5,
+      attackCooldown: 1.5,
       attackRange: 20,
-      speed: 20
+      speed: 15
     },
     warlock: {
       health: 10,
-      damage: 2,
-      attackCooldown: 0.5,
+      damage: 5,
+      attackCooldown: 1.5,
       attackRange: 20,
-      speed: 10
+      speed: 15
     },
     peasant: {
       health: 10,
