@@ -8,7 +8,7 @@
       damage: 25,
       attackCooldown: 1,
       attackRange: 5,
-      health: 250,
+      health: 300,
       speed: 25,
     },
     mmunchkin: {
@@ -44,7 +44,7 @@
   # object contains the attributes of all 'spawnable' units
   UNIT_PARAMETERS: {
     peasant: {
-      damage: 5,
+      damage: 3,
       attackCooldown: 1.5,
       attackRange: 5,
       health: 50,
@@ -59,50 +59,50 @@
     },
     archer: {
       damage: 10,
-      attackCooldown: 1.2,
+      attackCooldown: 1.5,
       attackRange: 15,
-      health: 60,
+      health: 75,
       speed: 20
     },
     knight: {
-      damage: 8,
-      attackCooldown: 1.7,
+      damage: 3,
+      attackCooldown: 1.5,
       attackRange: 5,
-      health: 200,
+      health: 150,
       speed: 10
     },
     thief: {
       damage: 10,
-      attackCooldown: 0.5,
-      attackRange: 4,
-      health: 60,
+      attackCooldown: 1.5,
+      attackRange: 5,
+      health: 50,
       speed: 30
     },
     wizard: {
       damage: 20,
-      attackCooldown: 4,
-      attackRange: 10,
-      health: 60,
-      speed: 15
-    },
-    thrower: {
-      damage: 7,
-      attackCooldown: 0.7,
-      attackRange: 8,
-      health: 60,
-      speed: 30
-    },
-    buffer: {
-      damage: 5,
-      attackCooldown: 1.5,
+      attackCooldown: 4.0,
       attackRange: 20,
       health: 50,
       speed: 15
     },
+    thrower: {
+      damage: 8,
+      attackCooldown: 1.0,
+      attackRange: 10,
+      health: 50,
+      speed: 20
+    },
+    buffer: {
+      damage: 3,
+      attackCooldown: 2.0,
+      attackRange: 15,
+      health: 50,
+      speed: 15
+    },
     warlock: {
-      damage: 5,
-      attackCooldown: 1.5,
-      attackRange: 20,
+      damage: 8,
+      attackCooldown: 2.0,
+      attackRange: 15,
       health: 50,
       speed: 15
     }
@@ -418,6 +418,7 @@
     builtPotion.team = 'neutral'
     builtPotion.pos.x = pos.x
     builtPotion.pos.y = pos.y
+    builtPotion.collectableProperties[0][0][1] = 200
     return builtPotion
 
   # every 30 second interval, spawn a potion if the previous potion was taken

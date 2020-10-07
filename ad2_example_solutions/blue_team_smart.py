@@ -54,8 +54,8 @@ game.setActionFor("archer", "defend", archerDefendFunction)
 game.setActionFor("archer", "update", archerUpdateFunction)
 
 game.setActionFor("knight", "spawn", knightSpawnFunction)
-game.setActionForUnit("knight-red-0", "update", archerUpdateFunction)
-game.setActionForUnit("knight-red-0", "defend", archerDefendFunction)
+game.setActionForUnit("knight-blue-0", "update", archerUpdateFunction)
+game.setActionForUnit("knight-blue-0", "defend", archerDefendFunction)
 
 while True:
     # spawn warrior units
@@ -76,14 +76,14 @@ while True:
         hero.say("defend!")
         hero.moveXY(63, 44)
         game.changeActionFor("archer", "defend")
-        game.changeActionForUnit("knight-red-0", "defend")
+        game.changeActionForUnit("knight-blue-0", "defend")
     elif not item and hero.health < 200:
         hero.say("regroup!")
         game.changeActionFor("archer", "update")
-        game.changeActionForUnit("knight-red-0", "update")
+        game.changeActionForUnit("knight-blue-0", "update")
     else:
         hero.say("fight!")
         game.changeActionFor("archer", "spawn")
-        game.changeActionForUnit("knight-red-0", "spawn")
+        game.changeActionForUnit("knight-blue-0", "spawn")
         if enemy:
             hero.attack(enemy)
