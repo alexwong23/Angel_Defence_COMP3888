@@ -435,7 +435,7 @@
   # the unit has to exist and can be controlled, before it behaves as instructed in the function
   setActionFor: (hero, color, type, event, fn) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [spawn]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
     @actionHelpers[color][type] ?= {}
     @actionHelpers[color][type][event] = fn
 
@@ -443,14 +443,14 @@
   # the unit has to exist and can be controlled, before it behaves as instructed in the function
   setActionForUnit: (hero, color, unitID, event, fn) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [spawn]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
     @actionHelpers[color][unitID] ?= {}
     @actionHelpers[color][unitID][event] = fn
 
   # allows users to change the behaviour of all units of type
   changeActionFor: (hero, color, type, event) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [spawn]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
     fn = @actionHelpers[color]?[type]?[event]
     if fn and _.isFunction(fn)
       for unit in @world.thangs when unit.type is type and unit.exists and unit.color is color
@@ -464,7 +464,7 @@
   # allows users to change the behaviour of a unit using thangID
   changeActionForUnit: (hero, color, unitID, event) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [spawn]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
     unit = @world.getThangByID(unitID)
     fn = @actionHelpers[color]?[unitID]?[event]
     if fn and _.isFunction(fn) and unit and unit.exists and unit.color is color
@@ -506,6 +506,6 @@
          unit.off("spawn")
          unit.on("spawn", fn)
 
-      unitsInGame.push(unit)
+      @unitsInGame.push(unit)
 
 }
