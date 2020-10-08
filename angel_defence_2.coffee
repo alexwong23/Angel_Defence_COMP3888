@@ -15,28 +15,28 @@
       damage: 8,
       attackCooldown: 1.5,
       attackRange: 5,
-      health: 40,
+      health: 50,
       speed: 15
     },
     fmunchkin: {
       damage: 8,
       attackCooldown: 1.5,
       attackRange: 5,
-      health: 40,
+      health: 50,
       speed: 15
     },
     bthrower: {
       damage: 10,
-      attackCooldown: 1.2,
+      attackCooldown: 1.0,
       attackRange: 10,
-      health: 30,
+      health: 25,
       speed: 20
     },
     brawler: {
-      damage: 20,
-      attackCooldown: 2.5,
+      damage: 40,
+      attackCooldown: 4.0,
       attackRange: 5,
-      health: 100,
+      health: 150,
       speed: 10
     }
   }
@@ -57,13 +57,6 @@
       health: 100,
       speed: 15
     },
-    archer: {
-      damage: 10,
-      attackCooldown: 1.5,
-      attackRange: 15,
-      health: 75,
-      speed: 20
-    },
     knight: {
       damage: 3,
       attackCooldown: 1.5,
@@ -77,6 +70,13 @@
       attackRange: 5,
       health: 50,
       speed: 30
+    },
+    archer: {
+      damage: 10,
+      attackCooldown: 1.5,
+      attackRange: 15,
+      health: 75,
+      speed: 20
     },
     wizard: {
       damage: 20,
@@ -183,7 +183,7 @@
   # Before the game renders, make thangs that do not have health and is not programmable not exist in the game
   # call prepareGame() to start the game process
   onFirstFrame: ->
-    for th in @world.thangs when th.health? and not th.isProgrammable
+    for th in @world.thangs when th.health? and not th.isProgrammable and not th.type == "Arrow Tower"
       th.setExists(false)
     @prepareGame()
 
@@ -264,9 +264,9 @@
   startGame: () ->
     buildType = @spawnNeutralChance()
     @neutralTop = @createNeutral(buildType, "green", 0)
-    @neutralTop.patrolPoints = ([{"x": 5, "y": 60}, {"x": 10, "y": 60}])
+    @neutralTop.patrolPoints = ([{"x": 10, "y": 60}, {"x": 25, "y": 50}])
     @neutralBtm = @createNeutral(buildType, "green", 1)
-    @neutralBtm.patrolPoints = ([{"x": 75, "y": 10}, {"x": 70, "y": 10}])
+    @neutralBtm.patrolPoints = ([{"x": 75, "y": 10}, {"x": 60, "y": 20}])
     @potionRight = @createPotion({"x": 51, "y": 25})
     @potionLeft = @createPotion({"x": 33, "y": 42})
     @hero.maxSpeed = 20
@@ -386,16 +386,16 @@
   spawnNeutralChance: () ->
     spawnChances = [
       [0, 'fmunchkin']
-      [50, 'mmunchkin']
-      [80, 'bthrower']
-      [90, 'brawler']
+      [35, 'mmunchkin']
+      [70, 'bthrower']
+      [99, 'brawler']
     ]
     n = 100 * @world.rand.randf()
+    returnType: ""
     for [spawnChance, type] in spawnChances
       if n >= spawnChance
-        return type
-      else
-        return "fmunchkin"
+        returnType = type
+    return returnType
 
   # every 15 second interval, spawn a neutral on the green positions if the previous neutral was defeated
   spawnNeutrals: () ->
@@ -404,12 +404,10 @@
       buildType = @spawnNeutralChance()
       if @neutralTop.health < 1
         @neutralTop = @createNeutral(buildType, "green", 0)
-        @neutralTop.patrolPoints = ([{"x": 5, "y": 60},
-                                      {"x": 10, "y": 60}])
+        @neutralTop.patrolPoints = ([{"x": 10, "y": 60}, {"x": 25, "y": 50}])
       if @neutralBtm.health < 1
         @neutralBtm = @createNeutral(buildType, "green", 1)
-        @neutralBtm.patrolPoints = ([{"x": 75, "y": 10},
-                                      {"x": 70, "y": 10}])
+        @neutralBtm.patrolPoints = ([{"x": 75, "y": 10}, {"x": 60, "y": 20}])
 
   # build a medium health potion at the x y coordinate
   createPotion:(pos) ->

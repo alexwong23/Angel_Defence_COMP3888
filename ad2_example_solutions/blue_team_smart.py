@@ -22,8 +22,8 @@ def archerDefendFunction(e):
     me = e.target
     while True:
         enemy = me.findNearestEnemy()
-        if me.pos.y < 48:
-            me.moveXY(49, 49)
+        if me.pos.x < 70:
+            me.moveXY(72, 52)
         else:
             if enemy and enemy.team != "neutral":
                 me.attack(enemy)
@@ -32,8 +32,8 @@ def archerUpdateFunction(e):
     me = e.target
     while True:
         enemy = me.findNearestEnemy()
-        if me.pos.x < 54:
-            me.moveXY(56, 45)
+        if me.pos.y < 57:
+            me.moveXY(59, 59)
         else:
             if enemy and enemy.team != "neutral":
                 me.attack(enemy)
@@ -74,7 +74,7 @@ while True:
         hero.move(item.pos)
     elif not item and hero.health < 100:
         hero.say("defend!")
-        hero.moveXY(63, 44)
+        hero.moveXY(76, 49)
         game.changeActionFor("archer", "defend")
         game.changeActionForUnit("knight-blue-0", "defend")
     elif not item and hero.health < 200:
