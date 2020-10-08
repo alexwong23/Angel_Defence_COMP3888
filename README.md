@@ -1,31 +1,57 @@
 # COMP3888 Capstone Project #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+We made two arenas on Codecombat platform: Angel Defence 1, and Angel Defence 2
 
-### What is this repository for? ###
+# How to access our arenas
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+* access angel defence 1:
+Click the [link](https://direct.codecombat.com/play/level/angel-defence-1)
 
-### How do I get set up? ###
+* access angel defence 2:
+Click the [link](https://direct.codecombat.com/play/level/angel-defence-2)
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+# How to play our arenas
 
-### Contribution guidelines ###
+* play angel defence 1:  
 
-* Writing tests
-* Code review
-* Other guidelines
+        Programming language for player: Python  
 
-### Who do I talk to? ###
+        Goal: Make your angel survive longer than your opponent.
 
-* Group Members
-    .....
-    .....
-* Other community or team contact
+        In this arena, you are allowed to spawn 3 types of 
+        allies: "warrior", "archer" and "wizard"  
+
+        Use game.spawn("<unit type>",<position number>)  
+        to spawn a unit at a specific position.
+
+        you can spawn units from position 0 to 5.  
+
+        You have 100 gold at the beginning of the game.  
+
+        Spawn allies takes your gold!
+        Earn gold by killing enemies!
+
+* play angel defence 2:  
+  
+        Programming language for player: Python   
+
+        Goal: Make your angel survive longer than your opponent.  
+
+        In this arena, you are allowed to spawn 
+            "warrior", "knight", "thief",
+            "archer", "wizard", "thrower",
+            "buffer", "warlock", "peasant"
+
+        /*
+            description about how to play AD2
+        */
+
+
+        Spawn allies takes your gold!
+        Earn gold by killing enemies!
+
+
+# Target player
+
+* Angel defence 1: CS1-2 Codecombat students
+* Angel defence 1: CS4-6 Codecombat students
