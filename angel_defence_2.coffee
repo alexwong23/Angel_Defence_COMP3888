@@ -8,35 +8,35 @@
       damage: 25,
       attackCooldown: 1,
       attackRange: 5,
-      health: 250,
+      health: 300,
       speed: 25,
     },
     mmunchkin: {
       damage: 8,
       attackCooldown: 1.5,
       attackRange: 5,
-      health: 40,
+      health: 50,
       speed: 15
     },
     fmunchkin: {
       damage: 8,
       attackCooldown: 1.5,
       attackRange: 5,
-      health: 40,
+      health: 50,
       speed: 15
     },
     bthrower: {
       damage: 10,
-      attackCooldown: 1.2,
+      attackCooldown: 1.0,
       attackRange: 10,
-      health: 30,
+      health: 25,
       speed: 20
     },
     brawler: {
-      damage: 20,
-      attackCooldown: 2.5,
+      damage: 40,
+      attackCooldown: 4.0,
       attackRange: 5,
-      health: 100,
+      health: 150,
       speed: 10
     }
   }
@@ -44,7 +44,7 @@
   # object contains the attributes of all 'spawnable' units
   UNIT_PARAMETERS: {
     peasant: {
-      damage: 5,
+      damage: 3,
       attackCooldown: 1.5,
       attackRange: 5,
       health: 50,
@@ -57,52 +57,52 @@
       health: 100,
       speed: 15
     },
-    archer: {
-      damage: 10,
-      attackCooldown: 1.2,
-      attackRange: 15,
-      health: 60,
-      speed: 20
-    },
     knight: {
-      damage: 8,
-      attackCooldown: 1.7,
+      damage: 3,
+      attackCooldown: 1.5,
       attackRange: 5,
-      health: 200,
+      health: 150,
       speed: 10
     },
     thief: {
       damage: 10,
-      attackCooldown: 0.5,
-      attackRange: 4,
-      health: 60,
+      attackCooldown: 1.5,
+      attackRange: 5,
+      health: 50,
       speed: 30
+    },
+    archer: {
+      damage: 10,
+      attackCooldown: 1.5,
+      attackRange: 15,
+      health: 75,
+      speed: 20
     },
     wizard: {
       damage: 20,
-      attackCooldown: 4,
-      attackRange: 10,
-      health: 60,
-      speed: 15
-    },
-    thrower: {
-      damage: 7,
-      attackCooldown: 0.7,
-      attackRange: 8,
-      health: 60,
-      speed: 30
-    },
-    buffer: {
-      damage: 5,
-      attackCooldown: 1.5,
+      attackCooldown: 4.0,
       attackRange: 20,
       health: 50,
       speed: 15
     },
+    thrower: {
+      damage: 8,
+      attackCooldown: 1.0,
+      attackRange: 10,
+      health: 50,
+      speed: 20
+    },
+    buffer: {
+      damage: 3,
+      attackCooldown: 2.0,
+      attackRange: 15,
+      health: 50,
+      speed: 15
+    },
     warlock: {
-      damage: 5,
-      attackCooldown: 1.5,
-      attackRange: 20,
+      damage: 8,
+      attackCooldown: 2.0,
+      attackRange: 15,
       health: 50,
       speed: 15
     }
@@ -183,7 +183,7 @@
   # Before the game renders, make thangs that do not have health and is not programmable not exist in the game
   # call prepareGame() to start the game process
   onFirstFrame: ->
-    for th in @world.thangs when th.health? and not th.isProgrammable
+    for th in @world.thangs when th.health? and not th.isProgrammable and not th.type == "Arrow Tower"
       th.setExists(false)
     @prepareGame()
 
@@ -264,9 +264,9 @@
   startGame: () ->
     buildType = @spawnNeutralChance()
     @neutralTop = @createNeutral(buildType, "green", 0)
-    @neutralTop.patrolPoints = ([{"x": 5, "y": 60}, {"x": 10, "y": 60}])
+    @neutralTop.patrolPoints = ([{"x": 10, "y": 60}, {"x": 25, "y": 50}])
     @neutralBtm = @createNeutral(buildType, "green", 1)
-    @neutralBtm.patrolPoints = ([{"x": 75, "y": 10}, {"x": 70, "y": 10}])
+    @neutralBtm.patrolPoints = ([{"x": 75, "y": 10}, {"x": 60, "y": 20}])
     @potionRight = @createPotion({"x": 51, "y": 25})
     @potionLeft = @createPotion({"x": 33, "y": 42})
     @hero.maxSpeed = 20
@@ -386,16 +386,16 @@
   spawnNeutralChance: () ->
     spawnChances = [
       [0, 'fmunchkin']
-      [50, 'mmunchkin']
-      [80, 'bthrower']
-      [90, 'brawler']
+      [35, 'mmunchkin']
+      [70, 'bthrower']
+      [99, 'brawler']
     ]
     n = 100 * @world.rand.randf()
+    returnType: ""
     for [spawnChance, type] in spawnChances
       if n >= spawnChance
-        return type
-      else
-        return "fmunchkin"
+        returnType = type
+    return returnType
 
   # every 15 second interval, spawn a neutral on the green positions if the previous neutral was defeated
   spawnNeutrals: () ->
@@ -404,12 +404,10 @@
       buildType = @spawnNeutralChance()
       if @neutralTop.health < 1
         @neutralTop = @createNeutral(buildType, "green", 0)
-        @neutralTop.patrolPoints = ([{"x": 5, "y": 60},
-                                      {"x": 10, "y": 60}])
+        @neutralTop.patrolPoints = ([{"x": 10, "y": 60}, {"x": 25, "y": 50}])
       if @neutralBtm.health < 1
         @neutralBtm = @createNeutral(buildType, "green", 1)
-        @neutralBtm.patrolPoints = ([{"x": 75, "y": 10},
-                                      {"x": 70, "y": 10}])
+        @neutralBtm.patrolPoints = ([{"x": 75, "y": 10}, {"x": 60, "y": 20}])
 
   # build a medium health potion at the x y coordinate
   createPotion:(pos) ->
@@ -418,6 +416,7 @@
     builtPotion.team = 'neutral'
     builtPotion.pos.x = pos.x
     builtPotion.pos.y = pos.y
+    builtPotion.collectableProperties[0][0][1] = 200
     return builtPotion
 
   # every 30 second interval, spawn a potion if the previous potion was taken
@@ -435,7 +434,7 @@
   # the unit has to exist and can be controlled, before it behaves as instructed in the function
   setActionFor: (hero, color, type, event, fn) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [spawn]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
     @actionHelpers[color][type] ?= {}
     @actionHelpers[color][type][event] = fn
 
@@ -443,14 +442,14 @@
   # the unit has to exist and can be controlled, before it behaves as instructed in the function
   setActionForUnit: (hero, color, unitID, event, fn) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [spawn]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
     @actionHelpers[color][unitID] ?= {}
     @actionHelpers[color][unitID][event] = fn
 
   # allows users to change the behaviour of all units of type
   changeActionFor: (hero, color, type, event) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [spawn]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
     fn = @actionHelpers[color]?[type]?[event]
     if fn and _.isFunction(fn)
       for unit in @world.thangs when unit.type is type and unit.exists and unit.color is color
@@ -464,7 +463,7 @@
   # allows users to change the behaviour of a unit using thangID
   changeActionForUnit: (hero, color, unitID, event) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [spawn]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
     unit = @world.getThangByID(unitID)
     fn = @actionHelpers[color]?[unitID]?[event]
     if fn and _.isFunction(fn) and unit and unit.exists and unit.color is color
@@ -506,6 +505,6 @@
          unit.off("spawn")
          unit.on("spawn", fn)
 
-      unitsInGame.push(unit)
+      @unitsInGame.push(unit)
 
 }
