@@ -185,6 +185,10 @@
   onFirstFrame: ->
     for th in @world.thangs when th.health? and not th.isProgrammable and not th.type == "Arrow Tower"
       th.setExists(false)
+    @rtower = @world.getThangByID("Red Tower")
+    @btower = @world.getThangByID("Blue Tower")
+    # @rtower.setExists(true)
+    # @btower.setExists(true)
     @prepareGame()
 
   # one of the four main functions provided by CodeCombat interface
@@ -297,15 +301,17 @@
       else if @rangel.health > @bangel.health
         @world.setGoalState "defeat-blue-angel", "success"
       else if @rangel.health == @bangel.health
-        # angel health same, compare hero health
-        if @hero.health < @hero2.health
+        # angel health same, compare team gold
+        if @inventory.goldForTeam("humans") < @inventory.goldForTeam("ogres")
           @world.setGoalState "defeat-red-angel", "success"
-        else if @hero2.health < @hero.health
+        else if @inventory.goldForTeam("ogres") < @inventory.goldForTeam("humans")
           @world.setGoalState "defeat-blue-angel", "success"
-        else
-          # heroes health same, compare gold
-          @world.setGoalState "defeat-red-angel", "failure"
-          @world.setGoalState "defeat-blue-angel", "failure"
+        else if @inventory.goldForTeam("ogres") == @inventory.goldForTeam("humans")
+          # team gold same, compare hero health
+          if @hero.health < @hero2.health
+            @world.setGoalState "defeat-red-angel", "success"
+          else if @hero2.health < @hero.health
+            @world.setGoalState "defeat-blue-angel", "success"
 
   # set up the unit, its stats, color and unit type
   # returns unit so that it can be stored in the global array
