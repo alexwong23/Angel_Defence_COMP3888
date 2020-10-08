@@ -1,4 +1,5 @@
 {
+  # available units for users
   FRIEND_UNIT: {
     warrior: {
       health: 40,
@@ -26,6 +27,7 @@
     }
   }
   
+  # neutral enemy units
   ENEMY_UNIT: {
     thrower: {
       health: 25,
@@ -64,42 +66,35 @@
     }
   }
   
-  #Constants
+  
   ALLOWED_UNIT_EVENT_NAMES: ["spawn"]
+  # max number of units allowed
   MAX_UNITS: 18
+  # max number of units per cell position
   MAX_UNITS_PER_CELL: 3
   
-  ARCHER_USER_FLAG : 0
-  ARCHER_USER_TYPE : "archer"
-  ARCHER_USER_COLOR : "red"
-  ARCHER_USER_POS : 0
-  
-  WARRIOR_USER_FLAG : 0
-  WARRIOR_USER_TYPE : "archer"
-  WARRIOR_USER_COLOR : "red"
-  WARRIOR_USER_POS : 0
-  
-  WIZARD_USER_FLAG : 0
-  WIZARD_USER_TYPE : "archer"
-  WIZARD_USER_COLOR : "red"
-  WIZARD_USER_POS : 0
 
-
-  #################################
+  # Configuration for positions of spawning units
   setSpawnPositions: ->
     @spawnPositions = []
     @spawnPositionCounters = {}
     @redSpawnPositions = []
     @blueSpawnPositions = []
     @greenSpawnPositions = []
+    
+    # 6 positions on red side
     for i in [0..5]
       th = @world.getThangByID("pos-red-" + i)
       th.index = i
       @redSpawnPositions.push(th)
+      
+    # 6 positions on blue side
     for i in [0..5]
       th = @world.getThangByID("pos-blue-" + i)
       th.index = i
       @blueSpawnPositions.push(th)
+    
+    # 2 positions for spawning enemies
     for i in [0..1]
       th = @world.getThangByID("pos-green-" + i)
       th.index = i
@@ -113,8 +108,7 @@
       th.keepTrackedProperty("alpha")
       @spawnPositionCounters[th.id] = 0
     
-
-
+  # Neutral units setting up
   setUpNeutral: (unit, unitType, color, posNumber) ->
       params = @ENEMY_UNIT[unitType]
       unit.maxHealth = params.health
@@ -128,7 +122,9 @@
       unit.maxSpeed = params.speed
       unit.keepTrackedProperty("maxSpeed")
       unit.patrolChaseRange = 5
+
       if posNumber is 0
+        # Patrol path for neutral enemies on the left side
         unit.patrolPoints = ([{"x": 32, "y": 55},
                               {"x": 32, "y": 40},
                               {"x": 12, "y": 40},
@@ -137,6 +133,7 @@
                               {"x": 30, "y": 10},
                               {"x": 15, "y": 10}])
       else
+        # Patrol path for neutral enemies on the right side
         unit.patrolPoints = ([{"x": 48, "y": 55},
                               {"x": 48, "y": 40},
                               {"x": 68, "y": 40},
@@ -150,28 +147,33 @@
       unit.type = unitType
       unit.color = color
 
+  # Netural creation
   createNeutral: (unitType, color, posNumber) ->
-
+      
+      # if invalid unit type, set to default fmunchkin
       if not @ENEMY_UNIT[unitType]
         unitType = "fmunchkin"
-
+      
+      # get the full type information
       fullType = "#{unitType}-#{color}"
-
+      
+      # if it is neutral on left side
       if posNumber==0
         unit = @instabuild("#{unitType}-#{color}", 9, 60)
+      # if it is neutral on right side
       else
         unit = @instabuild("#{unitType}-#{color}", 68, 60)
 
       @setUpNeutral(unit, unitType, color, posNumber)
 
       return unit
-
+  
+  # spawn netural randomly
   spawnNeutrals: () ->
     if (@world.age % 2)==0
       spawnChances = [
         [0, 'fmunchkin']
         [50, 'mmunchkin']
-        #[80, 'bthrower']
         [85, 'brawler']
         [99, 'headhunter']
       ]
@@ -184,78 +186,57 @@
         else
           break
       
-      # @redNeutral = []  
-      # @blueNeutral = []
-    
+      # create neutral on left side (attacking red team)
       unit = @createNeutral(buildType, "green", 0)
       @redNeutral.push unit
       
+      # create neutral on left side (attacking blue team)
       unit = @createNeutral(buildType, "green", 1)
       @blueNeutral.push unit
       
     
-  
-  addArcher: (hero, color, pos) ->
-    @ARCHER_USER_FLAG = 1
-    @ARCHER_USER_TYPE = "archer"
-    @ARCHER_USER_POS = pos
-    @ARCHER_USER_COLOR = color
-    
-  addWarrior: (hero, color, pos) ->
-    @WARRIOR_USER_FLAG = 1
-    @WARRIOR_USER_TYPE = "warrior"
-    @WARRIOR_USER_POS = pos
-    @WARRIOR_USER_COLOR = color
-    
-  addWizard: (hero, color, pos) ->
-    @WIZARD_USER_FLAG = 1
-    @WIZARD_USER_TYPE = "wizard"
-    @WIZARD_USER_POS = pos
-    @WIZARD_USER_COLOR = color
-  
+  # receive information when user calls game.spawn
   spawnControllables: (hero, color, unitType, posNumber) ->
-    #return if not @gameStart
-    # console.log("I AM USING SPAWN")
+
     team: ""
     if color is "red"
       team = "humans"
     else
       team = "ogres"
+      
+    # if the input unitType is invalid, set to default "warrior"
     if not unitType or not @FRIEND_UNIT[unitType]
       unitType = "warrior"
 
     fullType = "#{unitType}-#{color}"
     rectID = "pos-#{color}-#{posNumber}"
-    # console.log("I AM USING SPAWN 1"+ @spawnPositionCounters[rectID]+@MAX_UNITS_PER_CELL)
+
+    # Check if user has enough money to spawn units
     if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost and @spawnPositionCounters[rectID]<@MAX_UNITS_PER_CELL
       unit = @createUnit(unitType, color, posNumber)
-      console.log("CHECKING CREATE"+unit.type+unit.color)
+      # subtract cost from user's team
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
       unit.startsPeaceful = false
       unit.commander = null
+      
+      # if user is on red team
       if unit.color is "red"
-        # unit.commander = @hero
-        # unit.didTriggerSpawnEvent = true
-        
         @redPlayerUnit.push(unit)
         @redPos.push(posNumber)
-      if unit.color is "blue"
-        # unit.commander = @hero2
-        # unit.didTriggerSpawnEvent = true
         
+      # if user is on blue team
+      if unit.color is "blue"
         @bluePlayerUnit.push(unit)
         @bluePos.push(posNumber)
  
       
-    
+  # global setting for the game
   setupGlobal: (hero, color) ->
    
+    # available methods for users
     game = {
       randInt: @world.rand.rand2,
       log: console.log,
-      addArcher: @addArcher.bind(@, hero, color)
-      addWarrior: @addWarrior.bind(@, hero, color)
-      addWizard: @addWizard.bind(@, hero, color)
       spawn: @spawnControllables.bind(@, hero, color)
       }
 
@@ -266,32 +247,36 @@
       esperEngine.options.bookmarkInvocationMode = "loop"
       esperEngine.addGlobal?('game', game)
   
+  # make spawn positions(rectangles) invisible to users
   invisibleSpawnPos:()->
     for s in @spawnPositions
       s.alpha = 0
       s.clearSpeech()
       s.keepTrackedProperty("alpha")
-      console.log("clearing spwanPositions"+s.alpha)
   
+  # start the game
   setGameStart:()->
     @gameStart = true
     
+  
   checkDeath: () ->
     # Check if red team has killed an unit
     for unit in @redNeutral
-      console.log unit.health
+      # if the unit is dead
       if unit.health <= 0
-        @inventory.addGoldForTeam "humans", 10, false  #replace 10 with the cost of unit
+        # add gold for humans (red) team if this neutral enemy has been killed
+        @inventory.addGoldForTeam "humans", 10, false
         @redNeutral = (x for x in @redNeutral when x != unit)
         
     # Check if blue team has killed an unit    
     for unit in @blueNeutral
-    
+      # if the unit is dead
       if unit.health <= 0
-        @inventory.addGoldForTeam "ogres", 10, false  #replace 10 with the cost of unit
+        # add gold for ogres (blue) team if this neutral enemy has been killed
+        @inventory.addGoldForTeam "ogres", 10, false
         @blueNeutral = (x for x in @blueNeutral when x != unit)
 
-  
+  # set up units configuration
   setupUnit: (unit, unitType, color) ->
     params = @FRIEND_UNIT[unitType]
     unit.maxHealth = params.health
@@ -312,25 +297,30 @@
     unit.type = unitType
     unit.color = color
  
-    # unit.trigger?("spawn")
+    # activate units' actions
     fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
     if fn and _.isFunction(fn)
+      # red team controlled by hero placeholder
       if unit.color is "red"
         unit.commander = @hero
+      # blue team controlled by hero placeholder 1
       if unit.color is "blue"
         unit.commander = @hero2
       unit.didTriggerSpawnEvent = true
       unit.on("spawn", fn)
-    
+  
   getPosXY: (color, n) ->
     rectID = "pos-#{color}-#{n}"
     rect = @world.getThangByID(rectID)
     return rect.pos.copy()
   
+  # creation of units
   createUnit: (unitType, color, posNumber) ->
+    # if invalid friend unit type, set to default "archer"
     if not @FRIEND_UNIT[unitType]
       unitType = "archer"
     
+    # spawn position
     rectID = "pos-#{color}-#{posNumber}"
     
     unit = NaN
@@ -343,20 +333,18 @@
      
     return unit
   
+  # make sure spawned units have correct color and positions
   checkSpawn:()-> 
     i=0
-    console.log("BUTTUERBUTTER "+@bluePos.length+@bluePlayerUnit.length)
     for unit in @bluePlayerUnit
-      console.log(unit.type+"BUTTUERBUTTER"+unit.color+" "+@bluePos[i])
       @createUnit(unit.type, unit.color, @bluePos[i])
       i+=1
     i=0
-    for unit in @redPlayerUnit      
-      console.log(unit.type+"HEREHERHERHER"+unit.color+" "+@redPos[i])
+    for unit in @redPlayerUnit
       @createUnit(unit.type, unit.color, @redPos[i])
       i+=1
-  
-  #################################
+
+  # Setting of the level
   setUpLevel: ->
     @rangel = @world.getThangByID("Red Angel")
     @bangel = @world.getThangByID("Blue Angel")
@@ -384,25 +372,18 @@
     @inventory = @world.getSystem 'Inventory'
     @redNeutral = []
     @blueNeutral = []
-   # @setSpawnPositions()
     @gameStart = false
    
-    @redPlayerUnit=[]#only be used in checkSpawn
-    @redPos=[] #only be used in checkSpawn
-    @bluePlayerUnit=[] #only be used in checkSpawn
-    @bluePos=[] #only be used in checkSpawn
-    
+    @redPlayerUnit=[]   #only be used in checkSpawn
+    @redPos=[]          #only be used in checkSpawn
+    @bluePlayerUnit=[]  #only be used in checkSpawn
+    @bluePos=[]         #only be used in checkSpawn
+  
+  # only happens in the first frame
   onFirstFrame: ->
     for th in @world.thangs when th.health? and not th.isProgrammable
       th.setExists(false)
-    
-    #show spawnPosition to player
-    # for th in @spawnPositions
-    #   th.setExists(true)
-    #   th.say?(th.index)
-    #   th.alpha = 0.5
-    #   th.keepTrackedProperty("alpha")
-    #   @spawnPositionCounters[th.id] = 0
+
     @ref.setExists(true)
     
     #bind angel hp with hero hp
@@ -422,7 +403,7 @@
     @checkSpawn()
     @setTimeout(@setGameStart.bind(@), 3)
     
-
+  # happens every frame
   chooseAction: ->
     if @gameStart
       @spawnNeutrals()
@@ -433,9 +414,5 @@
       @hero.keepTrackedProperty("health")
       @hero2.health = @bangel.health
       @hero2.keepTrackedProperty("health")
-
-
-  checkVictory: ->
-
   
 }
