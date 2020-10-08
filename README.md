@@ -4,15 +4,15 @@ We made two arenas on Codecombat platform: Angel Defence 1, and Angel Defence 2
 
 # How to access our arenas
 
-* access angel defence 1:
+* Access Angel Defence 1:
 Click the [link](https://direct.codecombat.com/play/level/angel-defence-1)
 
-* access angel defence 2:
+* Access Angel Defence 2:
 Click the [link](https://direct.codecombat.com/play/level/angel-defence-2)
 
 # How to play our arenas
 
-* play angel defence 1:  
+* play Angel Defence 1:  
 
         Programming language for player: Python  
 
@@ -31,7 +31,7 @@ Click the [link](https://direct.codecombat.com/play/level/angel-defence-2)
         Spawn allies takes your gold!
         Earn gold by killing enemies!
 
-* play angel defence 2:  
+* Play Angel Defence 2:  
   
         Programming language for player: Python   
 
@@ -55,3 +55,15 @@ Click the [link](https://direct.codecombat.com/play/level/angel-defence-2)
 
 * Angel defence 1: CS1-2 Codecombat students
 * Angel defence 1: CS4-6 Codecombat students
+
+# How to access the source code (works for both arenas)
+
+The source code is contained in the CodeCombat level editor environment. 
+
+To access the source code:
+
+1. Go to the link: https://direct.codecombat.com/editor/level
+2. Add the name of the arena after "editor/level", for example, https://direct.codecombat.com/editor/level/angel-defence-1
+3. In the level editor, double click the "well".
+4. In the left side **COMPONENTS** bar, click **misc.Referee**
+5. The source code is in the **extraCode** section under misc.Referee.
