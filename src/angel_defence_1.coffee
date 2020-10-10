@@ -215,6 +215,7 @@
     # Check if user has enough money to spawn units
     if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost and @spawnPositionCounters[rectID]<@MAX_UNITS_PER_CELL
       unit = @createUnit(unitType, color, posNumber)
+      console.log "ID IN REFEREE "+unit.name
       # subtract cost from user's team
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
       unit.startsPeaceful = false
@@ -222,7 +223,18 @@
 
       @gameStates[color].myUnitType.push(unitType)
       @gameStates[color].myPositions.push(posNumber)
+      return unit
+    return null
 
+  getGold: (hero,color)->
+    if color is 'red'
+      return @inventory.goldForTeam('humans')
+    else
+      return @inventory.goldForTeam('ogres') 
+  
+  getCostOf:(hero,color,unitType)->
+    fullType = "#{unitType}-#{color}"
+    return @buildables[fullType].goldCost
 
   # global setting for the game
   setupGlobal: (hero, color) ->
@@ -231,7 +243,9 @@
     game = {
       randInt: @world.rand.rand2,
       log: console.log,
-      spawn: @spawnControllables.bind(@, hero, color)
+      spawn: @spawnControllables.bind(@, hero, color),
+      gold: @getGold.bind(@, hero, color),
+      costOf: @getCostOf.bind(@, hero, color)
       }
 
     aether = @world.userCodeMap[hero.id]?.plan
@@ -331,25 +345,11 @@
     return unit
 
   # make sure spawned units have correct color and positions
-  checkSpawn:(color)->
+  checkSpawn:(color) ->
     i = 0
     while i < @gameStates[color].myUnitType.length
-      try
-        unitType = @gameStates[color].myUnitType[i]
-      catch error
-        console.log "IN COLOR ERROR: "+" "+color
-        (if color is 'red' then @hero else @hero2).handleProgrammingError error, 'plan'
-      
-      try
-        unitPos = @gameStates[color].myPositions[i]
-      catch error
-        console.log "IN POS ERROR: "+" "+color
-        (if color is 'red' then @hero else @hero2).handleProgrammingError error, 'plan'
-      
-      # if isNaN(unitPos)
-      #   unitPos = 0
-      # if unitPos < 0 or unitPos > 5
-      #   unitPos = 0
+      unitType = @gameStates[color].myUnitType[i]
+      unitPos = @gameStates[color].myPositions[i]
       @createUnit(unitType, color, unitPos)
       console.log "TESTING: "+ unitType+" "+unitPos+" "+color
       i++
