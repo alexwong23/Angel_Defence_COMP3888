@@ -179,13 +179,20 @@
     @ref.say("Angel Defence 2.0")
     @inventory = @world.getSystem 'Inventory' # used to get manipulate teams' gold
 
+
   # one of the four main functions provided by CodeCombat interface
   # Before the game renders, make thangs that do not have health and is not programmable not exist in the game
   # call prepareGame() to start the game process
   onFirstFrame: ->
     for th in @world.thangs when th.health? and not th.isProgrammable and not th.type == "Arrow Tower"
       th.setExists(false)
+    # prevent the thangs outside the map from attacking one another
+    moveableThangs = ["peasant-red", "peasant-blue", "bthrower-green", "mmunchkin-green", "fmunchkin-green", "brawler-green"]
+    for moveableThang in moveableThangs
+      th = @world.getThangByID(moveableThang)
+      th.setExists(false)
     @prepareGame()
+
 
   # one of the four main functions provided by CodeCombat interface
   # this function performs like a while loop, running throughout the game
@@ -202,6 +209,7 @@
       #   if not u.isPathClear(u.pos, {"x": 70, "y": 55})
       #     u.move({x: 40, y: 35})
 
+
   # get the xy coordinates of the spawn position
   getPosXY: (color, n) ->
     rectID = "pos-#{color}-#{n}"
@@ -212,6 +220,7 @@
   prepareGame: ->
     @creepsInGame = [] # stores creeps from both teams and all neutrals
     @unitsInGame = [] # stores all spawned units
+
 
     # make ruins not exist until the angel is destroyed
     # track both hero's health
@@ -227,7 +236,6 @@
     @hero.keepTrackedProperty("maxHealth")
     @hero2.keepTrackedProperty("health")
     @hero2.keepTrackedProperty("maxHealth")
-
     # make spawn positions visible before the game starts
     for th in @spawnPositions
       th.setExists(true)
@@ -244,6 +252,7 @@
     @setTimeout((() => @ref.say("Fight!")), 4)
     @setTimeout(@clearRects.bind(@), 1) # spawn positions disappear after the first second
     @setTimeout(@startGame.bind(@), 4) # start the game after four seconds
+
 
   # clear the battlefield of dead creeps when the total no of creeps is a multiple of 10
   clearField: ->
@@ -312,6 +321,7 @@
   # set up the unit, its stats, color and unit type
   # returns unit so that it can be stored in the global array
   setupUnit: (unit, unitType, color, params) ->
+    unit.startsPeaceful = true
     unit.maxHealth = params.health
     unit.health = params.health
     unit.attackDamage = params.damage
@@ -348,7 +358,7 @@
   # give creep a patrol point to the enemy angel so they can attack it
   # push creep to the creeps array
   setUpCreep: (unit, patrolPoints) ->
-    unit.startsPeaceful = false
+    unit.startsPeaceful = true
     unit.commander = null
     if unit.color is "red"
       unit.commander = @hero
@@ -490,6 +500,7 @@
       team = "ogres"
 
     fullType = "#{unitType}-#{color}"
+
     #console.log unitType, ' requires gold cost ', @buildables[fullType].goldCost
     if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
