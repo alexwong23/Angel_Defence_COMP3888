@@ -364,7 +364,7 @@
       unit.commander = @hero
     if unit.color is "blue"
       unit.commander = @hero2
-    unit.patrolChaseRange = 20
+    unit.patrolChaseRange = 10
     unit.patrolPoints = patrolPoints
     @creepsInGame.push(unit)
 
@@ -440,6 +440,14 @@
       if @potionLeft.exists == false
         @potionLeft = @createPotion({"x": 33, "y": 42})
 
+
+  onUnitEvent: (unit, type, fn) ->
+    if not unit.on
+      console.warn("#{type} need hasEvent")
+    unit.didTriggerSpawnEvent = true
+    unit.off("spawn")
+    unit.on("spawn", fn)
+
   ## USER FUNCTIONS
 
   # allows users to assign units of unitType, a function on an allowed event
@@ -465,12 +473,7 @@
     fn = @actionHelpers[color]?[type]?[event]
     if fn and _.isFunction(fn)
       for unit in @world.thangs when unit.type is type and unit.exists and unit.color is color
-        if not unit.on
-          console.warn("#{type} need hasEvent")
-          continue
-        unit.didTriggerSpawnEvent = true
-        unit.off("spawn")
-        unit.on("spawn", fn)
+        @onUnitEvent(unit, type, fn)
 
   # allows users to change the behaviour of a unit using thangID
   changeActionForUnit: (hero, color, unitID, event) ->
@@ -479,11 +482,7 @@
     unit = @world.getThangByID(unitID)
     fn = @actionHelpers[color]?[unitID]?[event]
     if fn and _.isFunction(fn) and unit and unit.exists and unit.color is color
-        if not unit.on
-          console.warn("#{type} need hasEvent")
-        unit.didTriggerSpawnEvent = true
-        unit.off("spawn")
-        unit.on("spawn", fn)
+        @onUnitEvent(unit, unitID, fn)
 
   # allows users to spawn a unit on the command game.spawn('unitType') when the game starts
   # throws arugment error if unit type is not spawnable
@@ -507,16 +506,17 @@
       unit = @createHumans(unitType, color, 1)
       unit.startsPeaceful = false
       unit.commander = null
+      if unit.color is "red"
+        unit.commander = @hero
+      if unit.color is "blue"
+        unit.commander = @hero2
 
       fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
+      # replace spawn fn if unit has been given an individual spawn behaviour
+      if @actionHelpers[unit.color]?[unit.id]?["spawn"]
+        fn = @actionHelpers[unit.color]?[unit.id]?["spawn"]
       if fn and _.isFunction(fn)
-         if unit.color is "red"
-           unit.commander = @hero
-         if unit.color is "blue"
-           unit.commander = @hero2
-         unit.didTriggerSpawnEvent = true
-         unit.off("spawn")
-         unit.on("spawn", fn)
+        @onUnitEvent(unit, unitType, fn)
 
       @unitsInGame.push(unit)
 
