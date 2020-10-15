@@ -29,7 +29,7 @@ Click the [link](https://direct.codecombat.com/play/level/angel-defence-2)
 
         you can spawn units at positions from 0 to 5.  
 
-        You have 100 gold at the beginning of the game.  
+        You have 80 gold at the beginning of the game.  
 
         Spawn allies takes your gold!
         Earn gold by killing enemies!
