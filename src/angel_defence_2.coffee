@@ -276,7 +276,7 @@
 
   # TODO: can use checkVictory(), one of the four main functions?
   # check for a winner in the allocated game time
-  # break ties by comparing: angel health > hero health > gold
+  # break ties by comparing: angel health > total team gold > hero health
   checkWinner: () ->
     return if not @gameStarted
     @existence = @world.getSystem 'Existence'
@@ -297,15 +297,17 @@
       else if @rangel.health > @bangel.health
         @world.setGoalState "defeat-blue-angel", "success"
       else if @rangel.health == @bangel.health
-        # angel health same, compare hero health
-        if @hero.health < @hero2.health
+        # angel health same, compare team gold
+        if @inventory.teamGold["humans"].earned < @inventory.teamGold["ogres"].earned
           @world.setGoalState "defeat-red-angel", "success"
-        else if @hero2.health < @hero.health
+        else if @inventory.teamGold["ogres"].earned < @inventory.teamGold["humans"].earned
           @world.setGoalState "defeat-blue-angel", "success"
-        else
-          # heroes health same, compare gold
-          @world.setGoalState "defeat-red-angel", "failure"
-          @world.setGoalState "defeat-blue-angel", "failure"
+        else if @inventory.teamGold["ogres"].earned == @inventory.teamGold["humans"].earned
+          # team gold same, compare hero health
+          if @hero.health < @hero2.health
+            @world.setGoalState "defeat-red-angel", "success"
+          else if @hero2.health < @hero.health
+            @world.setGoalState "defeat-blue-angel", "success"
 
   # set up the unit, its stats, color and unit type
   # returns unit so that it can be stored in the global array
