@@ -118,7 +118,6 @@
     game = {
       randInt: @world.rand.rand2,
       log: console.log
-      setPatrolPointsFor: @setPatrolPointsFor.bind(@, hero, color),
       setActionFor: @setActionFor.bind(@, hero, color),
       setActionForUnit: @setActionForUnit.bind(@, hero, color),
       changeActionFor: @changeActionFor.bind(@, hero, color),
@@ -505,16 +504,6 @@
     unit.on("spawn", fn)
 
   ## USER FUNCTIONS
-
-  # allows users to assign units of unitType, a function on an allowed event
-  # the unit has to exist and can be controlled, before it behaves as instructed in the function
-  setPatrolPointsFor: (hero, color, type, patrolPoints, patrolChaseRange) ->
-    if not @UNIT_PARAMETERS[type]
-      throw new ArgumentError "Please specify one of the nine spawnable units.", "spawn", "unitType", "spawnable", type
-    for th in @world.thangs when th.health > 0 and th.type == type
-      console.log(th.id)
-      th.patrolPoints = patrolPoints
-      th.patrolChaseRange = patrolChaseRange
 
   # allows users to assign units of unitType, a function on an allowed event
   # the unit has to exist and can be controlled, before it behaves as instructed in the function
