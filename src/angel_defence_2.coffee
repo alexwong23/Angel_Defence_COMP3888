@@ -597,7 +597,7 @@
       all_cost += @buildables[fullType].goldCost
     all_cost *= Math.max (1 - (unitTypesArray.length - 1)*0.1),0.6
 
-    # player has enough gold, spawn all units
+    # if player has enough gold, spawn all units
     if @inventory.goldForTeam(team) >= all_cost
       @inventory.subtractGoldForTeam team, all_cost
       for unitType in unitTypesArray
