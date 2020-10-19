@@ -504,7 +504,7 @@
     if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
       unit = @createHumans(unitType, color, 1)
-      unit.startsPeaceful = false
+      unit.startsPeaceful = true
       unit.commander = null
       if unit.color is "red"
         unit.commander = @hero
