@@ -408,9 +408,11 @@
     spawnTime = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
     if spawnTime % 5.0 == 0 # spawn potion every 5 sec
       redCreep = @createHumans("peasant", "red", 0)
-      @setUpCreep(redCreep, [{"x": 35, "y": 30}, {"x": 45, "y": 35}, {"x": 70, "y": 55}])
+      @setUpCreep(redCreep, [{"x": 70, "y": 55}])
+      # @setUpCreep(redCreep, [{"x": 35, "y": 30}, {"x": 45, "y": 35}, {"x": 70, "y": 55}])
       blueCreep = @createHumans("peasant", "blue", 0)
-      @setUpCreep(blueCreep, [{"x": 46, "y": 34}, {"x": 34, "y": 31}, {"x": 12, "y": 12}])
+      @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
+      # @setUpCreep(blueCreep, [{"x": 46, "y": 34}, {"x": 34, "y": 31}, {"x": 12, "y": 12}])
 
   # create a neutral at the position
   # neutral has to be listed in the referee existence builds component
