@@ -118,11 +118,13 @@
     game = {
       randInt: @world.rand.rand2,
       log: console.log
+      setPatrolPointsFor: @setPatrolPointsFor.bind(@, hero, color),
       setActionFor: @setActionFor.bind(@, hero, color),
       setActionForUnit: @setActionForUnit.bind(@, hero, color),
       changeActionFor: @changeActionFor.bind(@, hero, color),
       changeActionForUnit: @changeActionForUnit.bind(@, hero, color),
-      spawn: @spawnControllables.bind(@, hero, color)
+      spawn: @spawnControllable.bind(@, hero, color),
+      spawnArray: @spawnMultipleControllables.bind(@, hero, color)
       }
     aether = @world.userCodeMap[hero.id]?.plan
     esperEngine = aether?.esperEngine
@@ -179,17 +181,20 @@
     @ref.say("Angel Defence 2.0")
     @inventory = @world.getSystem 'Inventory' # used to get manipulate teams' gold
 
+
   # one of the four main functions provided by CodeCombat interface
   # Before the game renders, make thangs that do not have health and is not programmable not exist in the game
   # call prepareGame() to start the game process
   onFirstFrame: ->
     for th in @world.thangs when th.health? and not th.isProgrammable and not th.type == "Arrow Tower"
       th.setExists(false)
-    @rtower = @world.getThangByID("Red Tower")
-    @btower = @world.getThangByID("Blue Tower")
-    # @rtower.setExists(true)
-    # @btower.setExists(true)
+    # prevent the thangs outside the map from attacking one another
+    moveableThangs = ["peasant-red", "peasant-blue", "bthrower-green", "mmunchkin-green", "fmunchkin-green", "brawler-green"]
+    for moveableThang in moveableThangs
+      th = @world.getThangByID(moveableThang)
+      th.setExists(false)
     @prepareGame()
+
 
   # one of the four main functions provided by CodeCombat interface
   # this function performs like a while loop, running throughout the game
@@ -206,6 +211,7 @@
       #   if not u.isPathClear(u.pos, {"x": 70, "y": 55})
       #     u.move({x: 40, y: 35})
 
+
   # get the xy coordinates of the spawn position
   getPosXY: (color, n) ->
     rectID = "pos-#{color}-#{n}"
@@ -216,6 +222,7 @@
   prepareGame: ->
     @creepsInGame = [] # stores creeps from both teams and all neutrals
     @unitsInGame = [] # stores all spawned units
+
 
     # make ruins not exist until the angel is destroyed
     # track both hero's health
@@ -231,7 +238,6 @@
     @hero.keepTrackedProperty("maxHealth")
     @hero2.keepTrackedProperty("health")
     @hero2.keepTrackedProperty("maxHealth")
-
     # make spawn positions visible before the game starts
     for th in @spawnPositions
       th.setExists(true)
@@ -248,6 +254,7 @@
     @setTimeout((() => @ref.say("Fight!")), 4)
     @setTimeout(@clearRects.bind(@), 1) # spawn positions disappear after the first second
     @setTimeout(@startGame.bind(@), 4) # start the game after four seconds
+
 
   # clear the battlefield of dead creeps when the total no of creeps is a multiple of 10
   clearField: ->
@@ -278,44 +285,78 @@
     @gameStarted = true
     @ref.setExists(false)
 
-  # TODO: can use checkVictory(), one of the four main functions?
   # check for a winner in the allocated game time
-  # break ties by comparing: angel health > hero health > gold
+  # timeout: break ties by comparing: angel health > total team gold > hero health
   checkWinner: () ->
     return if not @gameStarted
     @existence = @world.getSystem 'Existence'
 
     # if angel is destroyed, show the ruins
-    if @rangel.health <= 0
-      @rangel.setExists(false)
-      @rruin.setExists(true)
-      @rruin.alpha = 1
+    if @bangel.health <= 0 and @rangel.health <= 0
+      # angels defeated at same time, break ties
+      @redAngelCollapse()
+      @blueAngelCollapse()
+      @breakTiesGoal(true)
+    else if @rangel.health <= 0
+      @redAngelCollapse()
     else if @bangel.health <= 0
-      @bangel.setExists(false)
-      @bruin.setExists(true)
-      @bruin.alpha = 1
+      @blueAngelCollapse()
     else if Math.round(@world.age) == @existence.lifespan
       # end of game and no angel defeated, compare angel health
       if @bangel.health > @rangel.health
+        # ogres win and humans lose
         @world.setGoalState "defeat-red-angel", "success"
+        @world.setGoalState "defeat-blue-angel", "failure"
       else if @rangel.health > @bangel.health
+        # humans win and ogres lose
         @world.setGoalState "defeat-blue-angel", "success"
+        @world.setGoalState "defeat-red-angel", "failure"
       else if @rangel.health == @bangel.health
-        # angel health same, compare team gold
-        if @inventory.goldForTeam("humans") < @inventory.goldForTeam("ogres")
-          @world.setGoalState "defeat-red-angel", "success"
-        else if @inventory.goldForTeam("ogres") < @inventory.goldForTeam("humans")
-          @world.setGoalState "defeat-blue-angel", "success"
-        else if @inventory.goldForTeam("ogres") == @inventory.goldForTeam("humans")
-          # team gold same, compare hero health
-          if @hero.health < @hero2.health
-            @world.setGoalState "defeat-red-angel", "success"
-          else if @hero2.health < @hero.health
-            @world.setGoalState "defeat-blue-angel", "success"
+        # angel health same, break ties
+       @breakTiesGoal(false)
+
+  # break ties by comparing team gold earned and then hero health
+  breakTiesGoal: (isBothDefeated) ->
+    # compare team gold
+    if @inventory.teamGold["humans"].earned < @inventory.teamGold["ogres"].earned
+      # ogres win and humans lose
+      if isBothDefeated
+        @world.setGoalState "defeat-blue-angel", "failure"
+      @world.setGoalState "defeat-red-angel", "success"
+    else if @inventory.teamGold["ogres"].earned < @inventory.teamGold["humans"].earned
+      # humans win and ogres lose
+      if isBothDefeated
+        @world.setGoalState "defeat-red-angel", "failure"
+      @world.setGoalState "defeat-blue-angel", "success"
+    else if @inventory.teamGold["ogres"].earned == @inventory.teamGold["humans"].earned
+      # team gold same, compare hero health
+      if @hero.health < @hero2.health
+        # ogres win and humans lose
+        if isBothDefeated
+          @world.setGoalState "defeat-blue-angel", "failure"
+        @world.setGoalState "defeat-red-angel", "success"
+      else if @hero2.health < @hero.health
+        # humans win and ogres lose
+        if isBothDefeated
+          @world.setGoalState "defeat-red-angel", "failure"
+        @world.setGoalState "defeat-blue-angel", "success"
+
+  # if red angel defeated then red ruins appear
+  redAngelCollapse: () ->
+    @rangel.setExists(false)
+    @rruin.setExists(true)
+    @rruin.alpha = 1
+
+  # if blue angel defeated then blue ruins appear
+  blueAngelCollapse: () ->
+    @bangel.setExists(false)
+    @bruin.setExists(true)
+    @bruin.alpha = 1
 
   # set up the unit, its stats, color and unit type
   # returns unit so that it can be stored in the global array
   setupUnit: (unit, unitType, color, params) ->
+    unit.startsPeaceful = true
     unit.maxHealth = params.health
     unit.health = params.health
     unit.attackDamage = params.damage
@@ -352,13 +393,13 @@
   # give creep a patrol point to the enemy angel so they can attack it
   # push creep to the creeps array
   setUpCreep: (unit, patrolPoints) ->
-    unit.startsPeaceful = false
+    unit.startsPeaceful = true
     unit.commander = null
     if unit.color is "red"
       unit.commander = @hero
     if unit.color is "blue"
       unit.commander = @hero2
-    unit.patrolChaseRange = 20
+    unit.patrolChaseRange = 10
     unit.patrolPoints = patrolPoints
     @creepsInGame.push(unit)
 
@@ -367,9 +408,9 @@
     spawnTime = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
     if spawnTime % 5.0 == 0 # spawn potion every 5 sec
       redCreep = @createHumans("peasant", "red", 0)
-      @setUpCreep(redCreep, [{"x": 70, "y": 55}])
+      @setUpCreep(redCreep, [{"x": 35, "y": 30}, {"x": 45, "y": 35}, {"x": 70, "y": 55}])
       blueCreep = @createHumans("peasant", "blue", 0)
-      @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
+      @setUpCreep(blueCreep, [{"x": 46, "y": 34}, {"x": 34, "y": 31}, {"x": 12, "y": 12}])
 
   # create a neutral at the position
   # neutral has to be listed in the referee existence builds component
@@ -434,7 +475,46 @@
       if @potionLeft.exists == false
         @potionLeft = @createPotion({"x": 33, "y": 42})
 
+  # sets up a controllable unit
+  # assigns unit a team and commander and push it to the units array
+  setUpControllableUnit: (team, color, fullType, unitType) ->
+    unit = @createHumans(unitType, color, 1)
+    unit.startsPeaceful = false
+    unit.commander = null
+    if unit.color is "red"
+      unit.commander = @hero
+    if unit.color is "blue"
+      unit.commander = @hero2
+
+    # assigns the controllable unit the spawn behaviour
+    fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
+    # replace spawn fn if unit has been given an individual spawn behaviour
+    if @actionHelpers[unit.color]?[unit.id]?["spawn"]
+      fn = @actionHelpers[unit.color]?[unit.id]?["spawn"]
+    if fn and _.isFunction(fn)
+      @onUnitEvent(unit, unitType, fn)
+
+    # pushes the controllable unit to the array
+    @unitsInGame.push(unit)
+
+  onUnitEvent: (unit, type, fn) ->
+    if not unit.on
+      console.warn("#{type} need hasEvent")
+    unit.didTriggerSpawnEvent = true
+    unit.off("spawn")
+    unit.on("spawn", fn)
+
   ## USER FUNCTIONS
+
+  # allows users to assign units of unitType, a function on an allowed event
+  # the unit has to exist and can be controlled, before it behaves as instructed in the function
+  setPatrolPointsFor: (hero, color, type, patrolPoints, patrolChaseRange) ->
+    if not @UNIT_PARAMETERS[type]
+      throw new ArgumentError "Please specify one of the nine spawnable units.", "spawn", "unitType", "spawnable", type
+    for th in @world.thangs when th.health > 0 and th.type == type
+      console.log(th.id)
+      th.patrolPoints = patrolPoints
+      th.patrolChaseRange = patrolChaseRange
 
   # allows users to assign units of unitType, a function on an allowed event
   # the unit has to exist and can be controlled, before it behaves as instructed in the function
@@ -459,12 +539,7 @@
     fn = @actionHelpers[color]?[type]?[event]
     if fn and _.isFunction(fn)
       for unit in @world.thangs when unit.type is type and unit.exists and unit.color is color
-        if not unit.on
-          console.warn("#{type} need hasEvent")
-          continue
-        unit.didTriggerSpawnEvent = true
-        unit.off("spawn")
-        unit.on("spawn", fn)
+        @onUnitEvent(unit, type, fn)
 
   # allows users to change the behaviour of a unit using thangID
   changeActionForUnit: (hero, color, unitID, event) ->
@@ -473,17 +548,11 @@
     unit = @world.getThangByID(unitID)
     fn = @actionHelpers[color]?[unitID]?[event]
     if fn and _.isFunction(fn) and unit and unit.exists and unit.color is color
-        if not unit.on
-          console.warn("#{type} need hasEvent")
-        unit.didTriggerSpawnEvent = true
-        unit.off("spawn")
-        unit.on("spawn", fn)
+        @onUnitEvent(unit, unitID, fn)
 
   # allows users to spawn a unit on the command game.spawn('unitType') when the game starts
-  # throws arugment error if unit type is not spawnable
-  # deducts gold from the team
-  # assigns unit a team and commander and push it to the units array
-  spawnControllables: (hero, color, unitType) ->
+  # throws argument error if unit type is not spawnable
+  spawnControllable: (hero, color, unitType) ->
     return if not @gameStarted
     if not @UNIT_PARAMETERS[unitType]
       throw new ArgumentError "Please specify one of the nine spawnable units.", "spawn", "unitType", "spawnable", unitType
@@ -494,23 +563,44 @@
       team = "ogres"
 
     fullType = "#{unitType}-#{color}"
+
     #console.log unitType, ' requires gold cost ', @buildables[fullType].goldCost
     if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
-      unit = @createHumans(unitType, color, 1)
-      unit.startsPeaceful = false
-      unit.commander = null
+      @setUpControllableUnit(team, color, fullType, unitType)
 
-      fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
-      if fn and _.isFunction(fn)
-         if unit.color is "red"
-           unit.commander = @hero
-         if unit.color is "blue"
-           unit.commander = @hero2
-         unit.didTriggerSpawnEvent = true
-         unit.off("spawn")
-         unit.on("spawn", fn)
+  # allows users to spawn units on the command game.spawnArray(['unitType', 'unitType', ...]) when the game starts
+  # throws argument error if unit type is not spawnable
+  spawnMultipleControllables: (hero, color, unitTypesArray) ->
+    return if not @gameStarted
 
-      @unitsInGame.push(unit)
+    # check if all units in array is in @UNIT_PARAMETERS[unitType]
+    for unitType in unitTypesArray
+      if not @UNIT_PARAMETERS[unitType]
+        throw new ArgumentError "Please specify one of the nine spawnable units.", "spawnArray", "unitType", "spawnable", unitType
 
+    # get the player's team so we can deduct their gold
+    team: ""
+    if color is "red"
+      team = "humans"
+    else
+      team = "ogres"
+
+    # calculate the total cost of units in the array after applying discounts
+    # 2 units: 10% off
+    # 3 units: 20% off
+    # 4 units: 30% off
+    # 5 and above units: 40% off
+    all_cost = 0
+    for unitType in unitTypesArray
+      fullType = "#{unitType}-#{color}"
+      all_cost += @buildables[fullType].goldCost
+    all_cost *= Math.max (1 - (unitTypesArray.length - 1)*0.1),0.6
+
+    # player has enough gold, spawn all units
+    if @inventory.goldForTeam(team) >= all_cost
+      @inventory.subtractGoldForTeam team, all_cost
+      for unitType in unitTypesArray
+        fullType = "#{unitType}-#{color}"
+        @setUpControllableUnit(team, color, fullType, unitType)
 }
