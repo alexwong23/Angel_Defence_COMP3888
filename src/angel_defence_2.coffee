@@ -11,6 +11,13 @@
       health: 300,
       speed: 25,
     },
+    peasant: {
+      damage: 3,
+      attackCooldown: 1.5,
+      attackRange: 5,
+      health: 50,
+      speed: 15
+    },
     mmunchkin: {
       damage: 8,
       attackCooldown: 1.5,
@@ -43,13 +50,6 @@
 
   # object contains the attributes of all 'spawnable' units
   UNIT_PARAMETERS: {
-    peasant: {
-      damage: 3,
-      attackCooldown: 1.5,
-      attackRange: 5,
-      health: 50,
-      speed: 15
-    },
     warrior: {
       damage: 8,
       attackCooldown: 1.5,
@@ -93,18 +93,20 @@
       speed: 20
     },
     buffer: {
-      damage: 3,
-      attackCooldown: 2.0,
+      damage: 5,
+      attackCooldown: 4.0, # affects how fast spells are cast
       attackRange: 15,
       health: 50,
-      speed: 15
+      speed: 15,
+      healingAmount: 3
     },
     warlock: {
       damage: 8,
-      attackCooldown: 2.0,
+      attackCooldown: 4.0, # affects how fast spells are cast
       attackRange: 15,
       health: 50,
-      speed: 15
+      speed: 15,
+      slowAmount: 0.75
     }
   }
 
@@ -122,8 +124,8 @@
       setActionForUnit: @setActionForUnit.bind(@, hero, color),
       changeActionFor: @changeActionFor.bind(@, hero, color),
       changeActionForUnit: @changeActionForUnit.bind(@, hero, color),
-      spawn: @spawnControllable.bind(@, hero, color),
-      spawnArray: @spawnMultipleControllables.bind(@, hero, color)
+      spawn: @spawnUserMethod.bind(@, hero, color),
+      spawnArray: @spawnArray.bind(@, hero, color)
       }
     aether = @world.userCodeMap[hero.id]?.plan
     esperEngine = aether?.esperEngine
@@ -188,7 +190,9 @@
     for th in @world.thangs when th.health? and not th.isProgrammable and not th.type == "Arrow Tower"
       th.setExists(false)
     # prevent the thangs outside the map from attacking one another
-    moveableThangs = ["peasant-red", "peasant-blue", "bthrower-green", "mmunchkin-green", "fmunchkin-green", "brawler-green"]
+    moveableThangs = ["warrior-red", "knight-red", "thief-red", "archer-red", "wizard-red", "thrower-red", "buffer-red", "warlock-red", "peasant-red",
+      "warrior-blue", "knight-blue", "thief-blue", "archer-blue", "wizard-blue", "thrower-blue", "buffer-blue", "warlock-blue", "peasant-blue",
+      "bthrower-green", "mmunchkin-green", "fmunchkin-green", "brawler-green"]
     for moveableThang in moveableThangs
       th = @world.getThangByID(moveableThang)
       th.setExists(false)
@@ -205,11 +209,6 @@
       @spawnCreeps() # spawn every 5 seconds
       @clearField() # clear the dead creeps
       @checkWinner() # check for the winner
-      # TODO: move creep back to middle if stuck in neutral creep area
-      # for u in @creepsInGame when u.health > 0
-      #   if not u.isPathClear(u.pos, {"x": 70, "y": 55})
-      #     u.move({x: 40, y: 35})
-
 
   # get the xy coordinates of the spawn position
   getPosXY: (color, n) ->
@@ -219,9 +218,8 @@
 
   # after first frame, start preparing the game
   prepareGame: ->
-    @creepsInGame = [] # stores creeps from both teams and all neutrals
-    @unitsInGame = [] # stores all spawned units
-
+    @thangsInGame = [] # stores creeps from both teams and all neutrals
+    @spawnablesInGame = [] # stores all spawned units
 
     # make ruins not exist until the angel is destroyed
     # track both hero's health
@@ -254,12 +252,11 @@
     @setTimeout(@clearRects.bind(@), 1) # spawn positions disappear after the first second
     @setTimeout(@startGame.bind(@), 4) # start the game after four seconds
 
-
-  # clear the battlefield of dead creeps when the total no of creeps is a multiple of 10
+  # clear the battlefield of dead creeps/neutrals when the total is a multiple of 10
   clearField: ->
-    if @creepsInGame.length % 10 == 0
-      # when creep has no health, it is considered dead and its body disappears
-      for u in @creepsInGame when u.health <= 0
+    if @thangsInGame.length % 10 == 0
+      # when creep/neutral has no health, it is considered dead and its body disappears
+      for u in @thangsInGame when u.health <= 0
         u.setExists(false)
 
   # clear spawn positions and referee messages when round starts
@@ -273,12 +270,12 @@
   # spawn the first neutrals and potions, allow hero to move, remove referee
   startGame: () ->
     buildType = @spawnNeutralChance()
-    @neutralTop = @createNeutral(buildType, "green", 0)
-    @neutralTop.patrolPoints = ([{"x": 10, "y": 60}, {"x": 25, "y": 50}])
-    @neutralBtm = @createNeutral(buildType, "green", 1)
-    @neutralBtm.patrolPoints = ([{"x": 75, "y": 10}, {"x": 60, "y": 20}])
-    @potionRight = @createPotion({"x": 51, "y": 25})
-    @potionLeft = @createPotion({"x": 33, "y": 42})
+    @neutralTop = @createThang(buildType, "green", 0)
+    @setUpNeutral(@neutralTop, [{"x": 10, "y": 60}, {"x": 25, "y": 50}])
+    @neutralBtm = @createThang(buildType, "green", 1)
+    @setUpNeutral(@neutralBtm, [{"x": 75, "y": 10}, {"x": 60, "y": 20}])
+    @potionRight = @createPotion({"x": 49, "y": 30})
+    @potionLeft = @createPotion({"x": 34, "y": 40})
     @hero.maxSpeed = 20
     @hero2.maxSpeed = 20
     @gameStarted = true
@@ -352,10 +349,58 @@
     @bruin.setExists(true)
     @bruin.alpha = 1
 
+  # build a medium health potion at the x y coordinate
+  createPotion:(pos) ->
+    @build "health-potion-medium"
+    builtPotion = @performBuild()
+    builtPotion.team = 'neutral'
+    builtPotion.pos.x = pos.x
+    builtPotion.pos.y = pos.y
+    builtPotion.collectableProperties[0][0][1] = 200
+    return builtPotion
+
+  # every 30 second interval, spawn a potion if the previous potion was taken
+  spawnPotions: () ->
+    spawnTime = Math.round(@world.age * 10) / 10
+    if spawnTime % 30.0 == 0 # spawn potion every 30 sec interval
+      if @potionRight.exists == false
+        @potionRight = @createPotion({"x": 49, "y": 30})
+      if @potionLeft.exists == false
+        @potionLeft = @createPotion({"x": 34, "y": 40})
+
+  # changes warlock attack property, includes a slow on target unit
+  setUpWarlockSlow: (warlock, slowAmount) ->
+    warlock.oldperformAttack = warlock.performAttack
+    warlock.performAttack = (target, damageRatio=1, momentum=null) =>
+      return unless target.hasEffects
+      warlock.oldperformAttack(target, damageRatio, momentum)
+      target.effects = (e for e in target.effects when e.name isnt 'slow')
+      target.addEffect {name: 'slow', duration: 2, reverts: true, factor: slowAmount, targetProperty: 'maxSpeed'}
+
+  # changes buffer attack property, heals weak allies
+  setUpBufferHeal: (buffer, healingAmount) ->
+    buffer.oldperformAttack = buffer.performAttack
+    buffer.performAttack = (target, damageRatio=1, momentum=null) =>
+      buffer.oldperformAttack(target, damageRatio, momentum)
+
+      # find the weakest ally
+      friends=buffer.findFriends()
+      leastHealth=10000
+      weakestAlly=null
+      for friend in friends
+        if (@UNIT_PARAMETERS[friend.type] || friend.type == "duelist") && friend.health < leastHealth && friend.health > 0 and friend.hasEffects
+          leastHealth = friend.health
+          weakestAlly = friend
+
+      # heal the weakest ally every time buffer attacks
+      if weakestAlly && weakestAlly.effects
+        weakestAlly.health = Math.min(weakestAlly.health + healingAmount, weakestAlly.maxHealth)
+        weakestAlly.keepTrackedProperty('health')
+        weakestAlly.effects = (e for e in weakestAlly.effects when e.name isnt 'heal')
+        weakestAlly.addEffect {name: 'heal', duration: 0.5, reverts: true, setTo: true, targetProperty: 'beingHealed'}
+
   # set up the unit, its stats, color and unit type
-  # returns unit so that it can be stored in the global array
-  setupUnit: (unit, unitType, color, params) ->
-    unit.startsPeaceful = true
+  setupThang: (unit, unitType, color, params) ->
     unit.maxHealth = params.health
     unit.health = params.health
     unit.attackDamage = params.damage
@@ -372,27 +417,39 @@
       unit.commander = @
     unit.type = unitType
     unit.color = color
+    unit.startsPeaceful = true
+
+    if unit.type is "warlock" # warlock slows enemies
+      @setUpWarlockSlow(unit, params.slowAmount)
+    else if unit.type is "buffer" # buffer heals lowest health allies
+      @setUpBufferHeal(unit, params.healingAmount)
+
     return unit
 
-  # create a creep or unit at the position
-  # unit has to be listed in the referee existence builds component
-  createHumans: (unitType, color, posNumber) ->
-    if not @UNIT_PARAMETERS[unitType]
-      unitType = "peasant"
+  # create a thang at the position
+  # thang has to be listed in the referee existence builds component
+  createThang: (unitType, color, posNumber) ->
+    params = {}
+    if @THANG_PARAMETERS[unitType]
+      params = @THANG_PARAMETERS[unitType]
+    else if @UNIT_PARAMETERS[unitType]
+      params = @UNIT_PARAMETERS[unitType]
+    else
+      throw new ArgumentError "Thang of type " + unitType + " cannot be created in this level."
+
     pos = @getPosXY(color, posNumber)
     fullType = "#{unitType}-#{color}"
     @unitCounter[fullType] ?= 0
     @buildables[fullType].ids = ["#{fullType}-#{@unitCounter[fullType]}"]
     @unitCounter[fullType]++
     unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
-    @setupUnit(unit, unitType, color, @UNIT_PARAMETERS[unitType])
-    return unit
+    thang = @setupThang(unit, unitType, color, params)
+    return thang
 
   # assign creeps (not controllable) to their commander by color
   # give creep a patrol point to the enemy angel so they can attack it
-  # push creep to the creeps array
+  # push creep to the thangs array
   setUpCreep: (unit, patrolPoints) ->
-    unit.startsPeaceful = true
     unit.commander = null
     if unit.color is "red"
       unit.commander = @hero
@@ -400,33 +457,18 @@
       unit.commander = @hero2
     unit.patrolChaseRange = 10
     unit.patrolPoints = patrolPoints
-    @creepsInGame.push(unit)
+    @thangsInGame.push(unit)
 
   # every 5 second, spawn a creep on either team
   spawnCreeps: () ->
     spawnTime = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
     if spawnTime % 5.0 == 0 # spawn potion every 5 sec
-      redCreep = @createHumans("peasant", "red", 0)
-      @setUpCreep(redCreep, [{"x": 35, "y": 30}, {"x": 45, "y": 35}, {"x": 70, "y": 55}])
-      blueCreep = @createHumans("peasant", "blue", 0)
-      @setUpCreep(blueCreep, [{"x": 46, "y": 34}, {"x": 34, "y": 31}, {"x": 12, "y": 12}])
-
-  # create a neutral at the position
-  # neutral has to be listed in the referee existence builds component
-  # push neutral to the creeps array so that its body disappears when defeated
-  createNeutral: (unitType, color, posNumber) ->
-    if not @THANG_PARAMETERS[unitType]
-      unitType = "munchkin"
-    pos = @getPosXY(color, posNumber)
-    fullType = "#{unitType}-#{color}"
-    @unitCounter[fullType] ?= 0
-    @buildables[fullType].ids = ["#{fullType}-#{@unitCounter[fullType]}"]
-    @unitCounter[fullType]++
-    unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
-    neutralUnit = @setupUnit(unit, unitType, color, @THANG_PARAMETERS[unitType])
-    neutralUnit.patrolChaseRange = 10
-    @creepsInGame.push(unit)
-    return neutralUnit
+      redCreep = @createThang("peasant", "red", 0)
+      @setUpCreep(redCreep, [{"x": 70, "y": 55}])
+      # @setUpCreep(redCreep, [{"x": 35, "y": 30}, {"x": 45, "y": 35}, {"x": 70, "y": 55}])
+      blueCreep = @createThang("peasant", "blue", 0)
+      @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
+      # @setUpCreep(blueCreep, [{"x": 46, "y": 34}, {"x": 34, "y": 31}, {"x": 12, "y": 12}])
 
   # choose a neutral type to spawn at random
   spawnNeutralChance: () ->
@@ -443,47 +485,47 @@
         returnType = type
     return returnType
 
+  # assign neutral unit to a patrol and add it to the list of thangs so it's dead body can disappear too
+  setUpNeutral: (neutralUnit, patrolPoints) ->
+    neutralUnit.patrolChaseRange = 10
+    neutralUnit.patrolPoints = patrolPoints
+    @thangsInGame.push(neutralUnit)
+
   # every 15 second interval, spawn a neutral on the green positions if the previous neutral was defeated
   spawnNeutrals: () ->
     spawnTime = Math.round(@world.age * 10) / 10
     if spawnTime % 15.0 == 0 # spawn potion every 15 sec interval
       buildType = @spawnNeutralChance()
       if @neutralTop.health < 1
-        @neutralTop = @createNeutral(buildType, "green", 0)
-        @neutralTop.patrolPoints = ([{"x": 10, "y": 60}, {"x": 25, "y": 50}])
+        @neutralTop = @createThang(buildType, "green", 0)
+        @setUpNeutral(@neutralTop, [{"x": 10, "y": 60}, {"x": 25, "y": 50}])
       if @neutralBtm.health < 1
-        @neutralBtm = @createNeutral(buildType, "green", 1)
-        @neutralBtm.patrolPoints = ([{"x": 75, "y": 10}, {"x": 60, "y": 20}])
+        @neutralBtm = @createThang(buildType, "green", 1)
+        @setUpNeutral(@neutralBtm, [{"x": 75, "y": 10}, {"x": 60, "y": 20}])
 
-  # build a medium health potion at the x y coordinate
-  createPotion:(pos) ->
-    @build "health-potion-medium"
-    builtPotion = @performBuild()
-    builtPotion.team = 'neutral'
-    builtPotion.pos.x = pos.x
-    builtPotion.pos.y = pos.y
-    builtPotion.collectableProperties[0][0][1] = 200
-    return builtPotion
+  # create a creep or unit at the position
+  # unit has to be listed in the referee existence builds component
+  setUpSpawnable: (unitType, color, posNumber) ->
+    # return just to be safe, this check is already done by the functions that call it
+    return if not @UNIT_PARAMETERS[unitType]
 
-  # every 30 second interval, spawn a potion if the previous potion was taken
-  spawnPotions: () ->
-    spawnTime = Math.round(@world.age * 10) / 10
-    if spawnTime % 30.0 == 0 # spawn potion every 30 sec interval
-      if @potionRight.exists == false
-        @potionRight = @createPotion({"x": 51, "y": 25})
-      if @potionLeft.exists == false
-        @potionLeft = @createPotion({"x": 33, "y": 42})
+    spawnableUnit = @createThang(unitType, color, 1)
+
+    return spawnableUnit
 
   # sets up a controllable unit
   # assigns unit a team and commander and push it to the units array
-  setUpControllableUnit: (team, color, fullType, unitType) ->
-    unit = @createHumans(unitType, color, 1)
-    unit.startsPeaceful = false
+  createSpawnable: (team, color, fullType, unitType) ->
+    # return just to be safe, this check is already done by the functions that call it
+    return if not @UNIT_PARAMETERS[unitType]
+
+    unit = @setUpSpawnable(unitType, color, 1)
     unit.commander = null
     if unit.color is "red"
       unit.commander = @hero
     if unit.color is "blue"
       unit.commander = @hero2
+    @spawnablesInGame.push(unit)
 
     # assigns the controllable unit the spawn behaviour
     fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
@@ -492,9 +534,6 @@
       fn = @actionHelpers[unit.color]?[unit.id]?["spawn"]
     if fn and _.isFunction(fn)
       @onUnitEvent(unit, unitType, fn)
-
-    # pushes the controllable unit to the array
-    @unitsInGame.push(unit)
 
   onUnitEvent: (unit, type, fn) ->
     if not unit.on
@@ -509,7 +548,9 @@
   # the unit has to exist and can be controlled, before it behaves as instructed in the function
   setActionFor: (hero, color, type, event, fn) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify an allowed event type: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
+    if not @UNIT_PARAMETERS[type]
+      throw new ArgumentError "Please specify a valid spawnable unit", "setActionFor", "unitType", "spawnable", type
     @actionHelpers[color][type] ?= {}
     @actionHelpers[color][type][event] = fn
 
@@ -525,6 +566,8 @@
   changeActionFor: (hero, color, type, event) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
       throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
+    if not @UNIT_PARAMETERS[type]
+      throw new ArgumentError "Please specify a valid spawnable unit", "setActionFor", "unitType", "spawnable", type
     fn = @actionHelpers[color]?[type]?[event]
     if fn and _.isFunction(fn)
       for unit in @world.thangs when unit.type is type and unit.exists and unit.color is color
@@ -541,10 +584,10 @@
 
   # allows users to spawn a unit on the command game.spawn('unitType') when the game starts
   # throws argument error if unit type is not spawnable
-  spawnControllable: (hero, color, unitType) ->
+  spawnUserMethod: (hero, color, unitType) ->
     return if not @gameStarted
     if not @UNIT_PARAMETERS[unitType]
-      throw new ArgumentError "Please specify one of the nine spawnable units.", "spawn", "unitType", "spawnable", unitType
+      throw new ArgumentError "Please specify one of the eight spawnable units.", "spawn", "unitType", "spawnable", unitType
     team: ""
     if color is "red"
       team = "humans"
@@ -552,21 +595,21 @@
       team = "ogres"
 
     fullType = "#{unitType}-#{color}"
-
     #console.log unitType, ' requires gold cost ', @buildables[fullType].goldCost
     if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
-      @setUpControllableUnit(team, color, fullType, unitType)
+      @createSpawnable(team, color, fullType, unitType)
 
   # allows users to spawn units on the command game.spawnArray(['unitType', 'unitType', ...]) when the game starts
   # throws argument error if unit type is not spawnable
-  spawnMultipleControllables: (hero, color, unitTypesArray) ->
+  # user method spawns multiple units if the team has enough gold, provides discounted rates (see comments below for details)
+  spawnArray: (hero, color, unitTypesArray) ->
     return if not @gameStarted
 
     # check if all units in array is in @UNIT_PARAMETERS[unitType]
     for unitType in unitTypesArray
       if not @UNIT_PARAMETERS[unitType]
-        throw new ArgumentError "Please specify one of the nine spawnable units.", "spawnArray", "unitType", "spawnable", unitType
+        throw new ArgumentError "Please specify one of the eight spawnable units.", "spawnArray", "unitType", "spawnable", unitType
 
     # get the player's team so we can deduct their gold
     team: ""
@@ -591,5 +634,5 @@
       @inventory.subtractGoldForTeam team, all_cost
       for unitType in unitTypesArray
         fullType = "#{unitType}-#{color}"
-        @setUpControllableUnit(team, color, fullType, unitType)
+        @createSpawnable(team, color, fullType, unitType)
 }
