@@ -11,14 +11,14 @@
     wizard: {
       health: 10,
       damage: 5,
-      attackCooldown: 4,
+      attackCooldown: 0.75,
       attackRange: 25,
       speed: 0
     },
     archer: {
       health: 20,
       damage: 10,
-      attackCooldown: 0.5,
+      attackCooldown: 1,
       attackRange: 20,
       speed: 0
     }
@@ -38,14 +38,14 @@
       damage: 8,
       attackCooldown: 1.5,
       attackRange: 5,
-      speed: 50
+      speed: 65
     },
     fmunchkin: {
       health: 40,
       damage: 8,
       attackCooldown: 1.5,
       attackRange: 5,
-      speed: 50
+      speed: 65
     },
     bthrower: {
       health: 25,
@@ -72,13 +72,21 @@
   # game timeout seconds to clear the spawn positions and spawn neutrals
   TIME_OUT_SEC: 3
   # health increase rate for every second
-  HEALTH_INCREASE_RATE: 2
+  HEALTH_INCREASE_RATE: 2.5
   # speed increase rate for every second
-  SPEED_INCREASE_RATE: 1.5
+  SPEED_INCREASE_RATE: 2.5
   # neutral (enemy) spawn speed rate
   NEUTRAL_SPAWN_RATE: 2
   # netural patrol chase range
   NEUTRAL_CHASE_RANGE: 5
+  # flag to record if user have powered up waves: 0 for no, 1 for yes
+  RED_POWERED_WAVES_FLAG: 0
+  BLUE_POWERED_WAVES_FLAG: 0
+  # amount of gold consumed to power up waves, also contributes to the rate of powering
+  POWER_COST: 1
+  # power rate of powering up waves
+  POWER_RATE: 0.2
+  
 
   # initialize and set up the postion for spawning on both sides
   # get spawn positions by id and append of them to a list
@@ -189,7 +197,6 @@
       ]
       r = @world.rand.randf() * 100
       for [spawnChance, type] in spawnChances
-        # console.log n, " ",  spawnChance
         if r >= spawnChance
           buildType = type
         else
@@ -224,8 +231,10 @@
     rectID = "pos-#{color}-#{posNumber}"
 
     # Check if user has enough money to spawn units
-    if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost and @spawnPositionCounters[rectID]<@MAX_UNITS_PER_CELL
+    if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost and @spawnPositionCounters[rectID] < @MAX_UNITS_PER_CELL
+      
       unit = @createUnit(unitType, color, posNumber)
+      @spawnPositionCounters[rectID] += 1
       # subtract cost from user's team
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
       unit.startsPeaceful = false
@@ -233,7 +242,6 @@
 
       @gameStates[color].myUnitType.push(unitType)
       @gameStates[color].myPositions.push(posNumber)
-      
   # Allow user to get how much gold he has when calling the method
   getGold: (hero,color)->
     if color is 'red'
@@ -245,6 +253,21 @@
   getCostOf:(hero,color,unitType)->
     fullType = "#{unitType}-#{color}"
     return @buildables[fullType].goldCost
+  
+  # Allow user to power up waves using gold, units will be powered according to the amount of gold consumed
+  powerWaves:(hero,color,cost)->
+    if color is 'red'
+      team = 'humans'
+      if @inventory.goldForTeam(team) >= cost
+        @RED_POWERED_WAVES_FLAG = 1
+        @POWER_COST = cost
+        @inventory.subtractGoldForTeam team,cost
+    else
+      team = 'ogres'
+      if @inventory.goldForTeam(team) >= cost
+        @BLUE_POWERED_WAVES_FLAG = 1
+        @POWER_COST = cost
+        @inventory.subtractGoldForTeam team,cost
 
   # set up functions player can use in the game
   setupGlobal: (hero, color) ->
@@ -256,6 +279,7 @@
       spawn: @spawnControllables.bind(@, hero, color),
       gold: @getGold.bind(@, hero, color),
       costOf: @getCostOf.bind(@, hero, color)
+      levelUpAllies: @powerWaves.bind(@, hero, color)
       }
 
     aether = @world.userCodeMap[hero.id]?.plan
@@ -293,7 +317,22 @@
         # add gold for ogres (blue) team if this neutral enemy has been killed
         @inventory.addGoldForTeam "ogres", @ENEMY_BOUNTY, false
         @blueNeutral = (x for x in @blueNeutral when x != unit)
-
+  
+  # Update waves damage if user has called powerUpWaves()
+  updateWaves: () ->
+    # Check if user has called powerUpWaves()
+    if @RED_POWERED_WAVES_FLAG == 1
+      # power up spawned units in red team
+      for unit in @redUnits
+        unit.attackDamage += @POWER_COST * @POWER_RATE
+      @RED_POWERED_WAVES_FLAG = 0
+    if @BLUE_POWERED_WAVES_FLAG == 1 
+      # power up spwaned units in blue team
+      for unit in @blueUnits
+        unit.attackDamage += @POWER_COST * @POWER_RATE
+      @BLUE_POWERED_WAVES_FLAG = 0
+      
+  
   # Set up the netural including its type, status, color, actions, commander
   setupUnit: (unit, unitType, color) ->
     params = @FRIEND_UNIT[unitType]
@@ -341,7 +380,7 @@
 
     # spawn position
     rectID = "pos-#{color}-#{posNumber}"
-
+    
     pos = @getPosXY(color, posNumber)
     fullType = "#{unitType}-#{color}"
     @unitCounter[fullType] ?= 0
@@ -349,8 +388,12 @@
     @unitCounter[fullType]++
     unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
     @setupUnit(unit, unitType, color)
-    @spawnPositionCounters[rectID] += 1
-
+    
+    if color is 'red' and unit not in @redUnits
+      @redUnits.push unit
+    else if color is 'blue' and unit not in @blueUnits
+      @blueUnits.push unit
+      
     return unit
 
   # spawn units on first frame based on the information from user input stored in gameStates
@@ -359,7 +402,8 @@
     while i < @gameStates[color].myUnitType.length
       unitType = @gameStates[color].myUnitType[i]
       unitPos = @gameStates[color].myPositions[i]
-      @createUnit(unitType, color, unitPos)
+      unit = @createUnit(unitType, color, unitPos)
+      
       i++
         
 
@@ -388,6 +432,8 @@
     @inventory = @world.getSystem 'Inventory'
     @redNeutral = []
     @blueNeutral = []
+    @redUnits = []
+    @blueUnits = []
     @gameStart = false
     
     # store information from user input
@@ -458,6 +504,7 @@
   chooseAction: ->
     if @gameStart
       @spawnNeutrals()
+      @updateWaves()
       @checkDeath()
       @checkWinner()
 
