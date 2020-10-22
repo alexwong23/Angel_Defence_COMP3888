@@ -29,7 +29,7 @@ while True:
 
     if unitNum >= 18:
 
-        game.powerUpWaves(game.gold)
+        game.levelUpAllies(game.gold)
 
     else:
 
