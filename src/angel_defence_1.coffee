@@ -7,7 +7,7 @@
       attackCooldown: 1.5,
       attackRange: 13,
       speed: 0
-    },
+    },c
     wizard: {
       health: 10,
       damage: 5,
@@ -386,7 +386,12 @@
     @unitCounter[fullType] ?= 0
     @buildables[fullType].ids = ["#{fullType}-#{@unitCounter[fullType]}"]
     @unitCounter[fullType]++
-    unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
+    
+    x=pos.x+@world.rand.rand2 -3, 3
+    y=pos.y+@world.rand.rand2 -3, 3
+    
+    
+    unit = @instabuild("#{unitType}-#{color}", x, y, "#{unitType}-#{color}")
     @setupUnit(unit, unitType, color)
     
     if color is 'red' and unit not in @redUnits
