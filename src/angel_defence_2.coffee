@@ -66,7 +66,7 @@
     },
     thief: {
       damage: 10,
-      attackCooldown: 1.5,
+      attackCooldown: 0.5,
       attackRange: 5,
       health: 50,
       speed: 30
@@ -75,7 +75,7 @@
       damage: 10,
       attackCooldown: 1.5,
       attackRange: 15,
-      health: 75,
+      health: 50,
       speed: 20
     },
     wizard: {
@@ -187,7 +187,7 @@
   # Before the game renders, make thangs that do not have health and is not programmable not exist in the game
   # call prepareGame() to start the game process
   onFirstFrame: ->
-    for th in @world.thangs when th.health? and not th.isProgrammable and not th.type == "Arrow Tower"
+    for th in @world.thangs when th.health? and not th.isProgrammable
       th.setExists(false)
     # prevent the thangs outside the map from attacking one another
     moveableThangs = ["warrior-red", "knight-red", "thief-red", "archer-red", "wizard-red", "thrower-red", "buffer-red", "warlock-red", "peasant-red",
@@ -221,20 +221,30 @@
     @thangsInGame = [] # stores creeps from both teams and all neutrals
     @spawnablesInGame = [] # stores all spawned units
 
-    # make ruins not exist until the angel is destroyed
-    # track both hero's health
+    # make angel and tower exist in the game
+    rtower = @world.getThangByID("Red Tower")
     @rangel = @world.getThangByID("Red Angel")
+    rtower.setExists(true)
+    @rangel.setExists(true)
+    btower = @world.getThangByID("Blue Tower")
+    @bangel = @world.getThangByID("Blue Angel")
+    btower.setExists(true)
+    @bangel.setExists(true)
+
+    # make ruins not exist until the angel is destroyed
     @rruin = @world.getThangByID("Red Ruin")
     @rruin.keepTrackedProperty("alpha")
     @rruin.setExists(false)
-    @bangel = @world.getThangByID("Blue Angel")
     @bruin = @world.getThangByID("Blue Ruin")
     @bruin.keepTrackedProperty("alpha")
     @bruin.setExists(false)
+
+    # track both hero's health
     @hero.keepTrackedProperty("health")
     @hero.keepTrackedProperty("maxHealth")
     @hero2.keepTrackedProperty("health")
     @hero2.keepTrackedProperty("maxHealth")
+
     # make spawn positions visible before the game starts
     for th in @spawnPositions
       th.setExists(true)
@@ -388,7 +398,8 @@
       leastHealth=10000
       weakestAlly=null
       for friend in friends
-        if (@UNIT_PARAMETERS[friend.type] || friend.type == "duelist") && friend.health < leastHealth && friend.health > 0 and friend.hasEffects
+        if (@UNIT_PARAMETERS[friend.type] || friend.type == "peasant" || friend.type == "duelist") &&
+            friend.health < leastHealth && friend.health > 0 and friend.hasEffects
           leastHealth = friend.health
           weakestAlly = friend
 
