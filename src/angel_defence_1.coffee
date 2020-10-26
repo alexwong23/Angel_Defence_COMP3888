@@ -7,11 +7,7 @@
       attackCooldown: 1.5,
       attackRange: 13,
       speed: 0
-<<<<<<< HEAD
-    },c
-=======
     },
->>>>>>> 7eaadc79c652e3f26f8c9406f8113554a250e812
     wizard: {
       health: 10,
       damage: 5,
@@ -76,20 +72,13 @@
   # game timeout seconds to clear the spawn positions and spawn neutrals
   TIME_OUT_SEC: 3
   # health increase rate for every second
-<<<<<<< HEAD
   HEALTH_INCREASE_RATE: 2.5
   # speed increase rate for every second
   SPEED_INCREASE_RATE: 2.5
-=======
-  HEALTH_INCREASE_RATE: 4
-  # speed increase rate for every second
-  SPEED_INCREASE_RATE: 3
->>>>>>> 7eaadc79c652e3f26f8c9406f8113554a250e812
   # neutral (enemy) spawn speed rate
   NEUTRAL_SPAWN_RATE: 2
   # netural patrol chase range
   NEUTRAL_CHASE_RANGE: 5
-<<<<<<< HEAD
   # flag to record if user have powered up waves: 0 for no, 1 for yes
   RED_POWERED_WAVES_FLAG: 0
   BLUE_POWERED_WAVES_FLAG: 0
@@ -98,8 +87,6 @@
   # power rate of powering up waves
   POWER_RATE: 0.2
   
-=======
->>>>>>> 7eaadc79c652e3f26f8c9406f8113554a250e812
 
   # initialize and set up the postion for spawning on both sides
   # get spawn positions by id and append of them to a list
@@ -255,10 +242,6 @@
 
       @gameStates[color].myUnitType.push(unitType)
       @gameStates[color].myPositions.push(posNumber)
-<<<<<<< HEAD
-=======
-      
->>>>>>> 7eaadc79c652e3f26f8c9406f8113554a250e812
   # Allow user to get how much gold he has when calling the method
   getGold: (hero,color)->
     if color is 'red'
@@ -270,7 +253,6 @@
   getCostOf:(hero,color,unitType)->
     fullType = "#{unitType}-#{color}"
     return @buildables[fullType].goldCost
-<<<<<<< HEAD
   
   # Allow user to power up waves using gold, units will be powered according to the amount of gold consumed
   powerWaves:(hero,color,cost)->
@@ -286,8 +268,6 @@
         @BLUE_POWERED_WAVES_FLAG = 1
         @POWER_COST = cost
         @inventory.subtractGoldForTeam team,cost
-=======
->>>>>>> 7eaadc79c652e3f26f8c9406f8113554a250e812
 
   # set up functions player can use in the game
   setupGlobal: (hero, color) ->
@@ -299,10 +279,7 @@
       spawn: @spawnControllables.bind(@, hero, color),
       gold: @getGold.bind(@, hero, color),
       costOf: @getCostOf.bind(@, hero, color)
-<<<<<<< HEAD
       levelUpAllies: @powerWaves.bind(@, hero, color)
-=======
->>>>>>> 7eaadc79c652e3f26f8c9406f8113554a250e812
       }
 
     aether = @world.userCodeMap[hero.id]?.plan
@@ -340,7 +317,6 @@
         # add gold for ogres (blue) team if this neutral enemy has been killed
         @inventory.addGoldForTeam "ogres", @ENEMY_BOUNTY, false
         @blueNeutral = (x for x in @blueNeutral when x != unit)
-<<<<<<< HEAD
   
   # Update waves damage if user has called powerUpWaves()
   updateWaves: () ->
@@ -349,17 +325,16 @@
       # power up spawned units in red team
       for unit in @redUnits
         unit.attackDamage += @POWER_COST * @POWER_RATE
+        unit.say("I am stronger!")
       @RED_POWERED_WAVES_FLAG = 0
     if @BLUE_POWERED_WAVES_FLAG == 1 
       # power up spwaned units in blue team
       for unit in @blueUnits
         unit.attackDamage += @POWER_COST * @POWER_RATE
+        unit.say("I am stronger!")
       @BLUE_POWERED_WAVES_FLAG = 0
       
   
-=======
-
->>>>>>> 7eaadc79c652e3f26f8c9406f8113554a250e812
   # Set up the netural including its type, status, color, actions, commander
   setupUnit: (unit, unitType, color) ->
     params = @FRIEND_UNIT[unitType]
@@ -407,26 +382,18 @@
 
     # spawn position
     rectID = "pos-#{color}-#{posNumber}"
-<<<<<<< HEAD
     
-=======
-
->>>>>>> 7eaadc79c652e3f26f8c9406f8113554a250e812
     pos = @getPosXY(color, posNumber)
     fullType = "#{unitType}-#{color}"
     @unitCounter[fullType] ?= 0
     @buildables[fullType].ids = ["#{fullType}-#{@unitCounter[fullType]}"]
     @unitCounter[fullType]++
-<<<<<<< HEAD
     
     x=pos.x+@world.rand.rand2 -3, 3
     y=pos.y+@world.rand.rand2 -3, 3
     
     
     unit = @instabuild("#{unitType}-#{color}", x, y, "#{unitType}-#{color}")
-=======
-    unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y, "#{unitType}-#{color}")
->>>>>>> 7eaadc79c652e3f26f8c9406f8113554a250e812
     @setupUnit(unit, unitType, color)
     
     if color is 'red' and unit not in @redUnits
@@ -442,12 +409,8 @@
     while i < @gameStates[color].myUnitType.length
       unitType = @gameStates[color].myUnitType[i]
       unitPos = @gameStates[color].myPositions[i]
-<<<<<<< HEAD
       unit = @createUnit(unitType, color, unitPos)
       
-=======
-      @createUnit(unitType, color, unitPos)
->>>>>>> 7eaadc79c652e3f26f8c9406f8113554a250e812
       i++
         
 
