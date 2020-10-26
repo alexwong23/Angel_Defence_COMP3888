@@ -125,7 +125,8 @@
       changeActionFor: @changeActionFor.bind(@, hero, color),
       changeActionForUnit: @changeActionForUnit.bind(@, hero, color),
       spawn: @spawnUserMethod.bind(@, hero, color),
-      spawnArray: @spawnArray.bind(@, hero, color)
+      spawnArray: @spawnArray.bind(@, hero, color),
+      costOfSpawnArray: @costOfSpawnArray.bind(@, hero, color)
       }
     aether = @world.userCodeMap[hero.id]?.plan
     esperEngine = aether?.esperEngine
@@ -546,6 +547,25 @@
     if fn and _.isFunction(fn)
       @onUnitEvent(unit, unitType, fn)
 
+  # function to calculate the discounted price of using the user method game.spawnArray
+  calculateSpawnArray: (color, unitTypesArray) ->
+    # check if all units in array is in @UNIT_PARAMETERS[unitType]
+    for unitType in unitTypesArray
+      if not @UNIT_PARAMETERS[unitType]
+        throw new ArgumentError "Please specify one of the eight spawnable units.", "spawnArray", "unitType", "spawnable", unitType
+    # calculate the total cost of units in the array after applying discounts
+    # 2 units: 10% off
+    # 3 units: 20% off
+    # 4 units: 30% off
+    # 5 and above units: 40% off
+    all_cost = 0
+    for unitType in unitTypesArray
+      fullType = "#{unitType}-#{color}"
+      all_cost += @buildables[fullType].goldCost
+    all_cost *= Math.max (1 - (unitTypesArray.length - 1)*0.1),0.6
+    return all_cost
+
+  # function to assign a behaviour to the unit
   onUnitEvent: (unit, type, fn) ->
     if not unit.on
       console.warn("#{type} need hasEvent")
@@ -611,16 +631,18 @@
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
       @createSpawnable(team, color, fullType, unitType)
 
+
+  # allows users to check if they have enough gold to spawn units in the array
+  # throws argument error if any unit type is not spawnable
+  costOfSpawnArray: (hero, color, unitTypesArray) ->
+    return if not @gameStarted
+    return @calculateSpawnArray(color, unitTypesArray)
+
   # allows users to spawn units on the command game.spawnArray(['unitType', 'unitType', ...]) when the game starts
-  # throws argument error if unit type is not spawnable
-  # user method spawns multiple units if the team has enough gold, provides discounted rates (see comments below for details)
+  # throws argument error if any unit type is not spawnable
+  # if the player has enough gold, deduct gold and spawn the units
   spawnArray: (hero, color, unitTypesArray) ->
     return if not @gameStarted
-
-    # check if all units in array is in @UNIT_PARAMETERS[unitType]
-    for unitType in unitTypesArray
-      if not @UNIT_PARAMETERS[unitType]
-        throw new ArgumentError "Please specify one of the eight spawnable units.", "spawnArray", "unitType", "spawnable", unitType
 
     # get the player's team so we can deduct their gold
     team: ""
@@ -629,16 +651,8 @@
     else
       team = "ogres"
 
-    # calculate the total cost of units in the array after applying discounts
-    # 2 units: 10% off
-    # 3 units: 20% off
-    # 4 units: 30% off
-    # 5 and above units: 40% off
-    all_cost = 0
-    for unitType in unitTypesArray
-      fullType = "#{unitType}-#{color}"
-      all_cost += @buildables[fullType].goldCost
-    all_cost *= Math.max (1 - (unitTypesArray.length - 1)*0.1),0.6
+    # calculate discounted cost
+    all_cost = @calculateSpawnArray(color, unitTypesArray)
 
     # if player has enough gold, spawn all units
     if @inventory.goldForTeam(team) >= all_cost
