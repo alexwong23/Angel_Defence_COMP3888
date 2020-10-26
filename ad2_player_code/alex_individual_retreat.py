@@ -10,39 +10,54 @@ AVAILABLE = [
     "archer", "wizard", "thrower",
     "buffer", "warlock"]
 
-# warriors attack the nearest enemy!
-def archerSpawnFunction(e):
+def bufferSpawnFunction(e):
     me = e.target
     while True:
         enemy = me.findNearestEnemy()
-        if enemy:
+        if me.health < 35:
+            if enemy and enemy.distanceTo(ownTower.pos) < 20:
+                me.attack(enemy)
+            else:
+                me.move(ownAngel.pos)
+        elif enemy:
             me.attack(enemy)
-
-def archerDefendFunction(e):
-    me = e.target
-    while True:
-        enemy = me.findNearestEnemy()
-        if enemy and enemy.distanceTo(ownTower.pos) < 20:
-            me.attack(enemy)
-        else:
-            me.move(ownAngel.pos)
-
 
 def knightSpawnFunction(e):
     me = e.target
     while True:
         enemy = me.findNearestEnemy()
+        if me.health < 75:
+            if enemy and enemy.distanceTo(ownTower.pos) < 20:
+                me.attack(enemy)
+            else:
+                me.move(ownAngel.pos)
+        elif enemy:
+            me.attack(enemy)
+
+def unitDefendFunction(e):
+    me = e.target
+    while True:
+        enemy = me.findNearestEnemy()
         if enemy and enemy.distanceTo(ownTower.pos) < 20:
             me.attack(enemy)
         else:
-            me.move(ownAngel.pos)
+            me.move(ownTower.pos)
 
-# all units will behave as instructed in the function 'warriorSpawnFunction'
-game.setActionFor("archer", "spawn", archerSpawnFunction)
-game.setActionFor("archer", "defend", archerDefendFunction)
+def bufferUpdateFunction(e):
+    me = e.target
+    while True:
+        me.move(ownTower.pos)
+        console.log(me.id)
 
+
+game.setActionFor("buffer", "spawn", bufferSpawnFunction)
+game.setActionFor("buffer", "defend", unitDefendFunction)
 game.setActionFor("knight", "spawn", knightSpawnFunction)
-game.setActionForUnit("knight-blue-0", "defend", archerDefendFunction)
+game.setActionFor("knight", "defend", unitDefendFunction)
+
+game.setActionFor("buffer", "update", bufferUpdateFunction)
+
+game.buildAction("dirtyKnight", unitDefendFunction)
 
 # find important thangs by type
 enemyHero = hero.findByType("duelist", hero.findEnemies())[0]
@@ -51,12 +66,17 @@ ownAngel = hero.findByType("angel-fountain", hero.findFriends())[0]
 ownTower = hero.findByType("arrow-tower", hero.findFriends())[0]
 
 while True:
-    archers = hero.findByType("archer", hero.findFriends())
+    buffers = hero.findByType("buffer", hero.findFriends())
     knights = hero.findByType("knight", hero.findFriends())
-    if hero.gold > hero.costOf("knight") and len(archers) >= 3 and len(knights) <= 2:
+    if hero.gold > hero.costOf("knight") and len(buffers) >= 2 and len(knights) <= 2:
         game.spawn("knight")
-    elif hero.gold > hero.costOf("archer"):
-        game.spawn("knight")
+    elif hero.gold > hero.costOf("buffer") and len(buffers) <= 3:
+        game.spawn("buffer")
+
+    if len(knights) >= 1:
+        hero.say("first knight defend")
+        # game.changeActionForUnit(knights[0], "dirtyKnight")
+        game.changeUnitWithoutSaving(knights[0], unitDefendFunction)
 
     enemy = hero.findNearestEnemy()
     item = hero.findNearestItem()
@@ -66,15 +86,15 @@ while True:
     elif not item and hero.health < 150 and hero.canCast("invisibility", hero): # turn invisible to escape
         hero.cast("invisibility", hero)
         hero.move(ownAngel.pos)
-    elif not item and hero.health < 150: # retreat to base
-        game.changeActionFor("archer", "defend")
-        game.changeActionForUnit("knight-blue-0", "defend")
+    elif not item and hero.health < 150:
+        game.changeActionFor("buffer", "defend")
+        game.changeActionFor("knight", "defend")
         hero.move(ownAngel.pos)
     elif enemy and hero.health < 200 and hero.canCast("flame-armor", hero): # cast flame armor
         hero.cast("flame-armor", hero)
     elif enemy:
-        game.changeActionFor("archer", "spawn")
-        game.changeActionForUnit("knight-blue-0", "spawn")
+        game.changeActionFor("buffer", "spawn")
+        game.changeActionFor("knight", "spawn")
         hero.attack(enemy)
-    else:
+    elif enemyAngel:
         hero.attack(enemyAngel)
