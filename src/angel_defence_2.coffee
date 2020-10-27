@@ -122,9 +122,9 @@
       log: console.log
       # setPatrolPointsFor: @setPatrolPointsFor.bind(@, hero, color),
       setActionFor: @setActionFor.bind(@, hero, color),
-      setActionForUnit: @setActionForUnit.bind(@, hero, color),
       changeActionFor: @changeActionFor.bind(@, hero, color),
       changeActionForUnit: @changeActionForUnit.bind(@, hero, color),
+      removeActionForUnit: @removeActionForUnit.bind(@, hero, color),
       spawn: @spawnUserMethod.bind(@, hero, color),
       spawnArray: @spawnArray.bind(@, hero, color),
       costOfSpawnArray: @costOfSpawnArray.bind(@, hero, color)
@@ -552,6 +552,7 @@
     # replace spawn fn if unit has been given an individual spawn behaviour
     if @actionHelpers[unit.color]?[unit.id]?["spawn"]
       fn = @actionHelpers[unit.color]?[unit.id]?["spawn"]
+      console.log(unit.id + " has a function")
     if fn and _.isFunction(fn)
       @onUnitEvent(unit, unitType, fn)
 
@@ -603,14 +604,6 @@
     @actionHelpers[color][type] ?= {}
     @actionHelpers[color][type][event] = fn
 
-  # allows users to assign a specific unit a function on an allowed event
-  # the unit has to exist and can be controlled, before it behaves as instructed in the function
-  setActionForUnit: (hero, color, unitID, event, fn) ->
-    if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
-    @actionHelpers[color][unitID] ?= {}
-    @actionHelpers[color][unitID][event] = fn
-
   # allows users to change the behaviour of all units of type
   changeActionFor: (hero, color, type, event) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
@@ -619,17 +612,27 @@
       throw new ArgumentError "Please specify a valid spawnable unit", "setActionFor", "unitType", "spawnable", type
     fn = @actionHelpers[color]?[type]?[event]
     if fn and _.isFunction(fn)
-      for unit in @world.thangs when unit.type is type and unit.exists and unit.color is color
+      for unit in @world.thangs when unit.type is type and unit.exists and unit.color is color and not @actionHelpers[unit.color]?[unit.id]
         @onUnitEvent(unit, type, fn)
 
-  # allows users to change the behaviour of a unit using thangID
-  changeActionForUnit: (hero, color, unitID, event) ->
-    if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
-    unit = @world.getThangByID(unitID)
-    fn = @actionHelpers[color]?[unitID]?[event]
-    if fn and _.isFunction(fn) and unit and unit.exists and unit.color is color
-        @onUnitEvent(unit, unitID, fn)
+  # allows users to change the behaviour of an individual unit
+  changeActionForUnit: (hero, color, unit, fn) ->
+    if not unit or not unit.id or not @world.getThangByID(unit.id)
+      throw new ArgumentError "Please provide a unit", "changeActionForUnit", "unit", "spawnable", unit
+    if not @UNIT_PARAMETERS[unit.type]
+      throw new ArgumentError "Please specify a valid spawnable unit", "changeActionForUnit", "unitType", "spawnable", unit.type
+    # assign a function to it so that changeActionFor does not override this unit's action
+    @actionHelpers[color][unit.id] = fn
+    if fn and _.isFunction(fn) and unit.exists and unit.color is color
+        @onUnitEvent(unit, unit.id, fn)
+
+  # allows users to remove the behaviour of an individual unit so it can be controlled using changeActionFor
+  removeActionForUnit: (hero, color, unit) ->
+    if not unit or not unit.id or not @world.getThangByID(unit.id)
+      throw new ArgumentError "Please provide a unit", "changeActionForUnit", "unit", "spawnable", unit
+    if not @UNIT_PARAMETERS[unit.type]
+      throw new ArgumentError "Please specify a valid spawnable unit", "changeActionForUnit", "unitType", "spawnable", unit.type
+    @actionHelpers[color][unit.id] = null
 
   # allows users to spawn a unit on the command game.spawn('unitType') when the game starts
   # throws argument error if unit type is not spawnable
