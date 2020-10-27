@@ -191,12 +191,19 @@
   onFirstFrame: ->
     for th in @world.thangs when th.health? and not th.isProgrammable
       th.setExists(false)
+
     # prevent the thangs outside the map from attacking one another
-    moveableThangs = ["warrior-red", "knight-red", "thief-red", "archer-red", "wizard-red", "thrower-red", "buffer-red", "warlock-red", "peasant-red",
-      "warrior-blue", "knight-blue", "thief-blue", "archer-blue", "wizard-blue", "thrower-blue", "buffer-blue", "warlock-blue", "peasant-blue",
-      "bthrower-green", "mmunchkin-green", "fmunchkin-green", "brawler-green"]
-    for moveableThang in moveableThangs
-      th = @world.getThangByID(moveableThang)
+    predefinedThangs = []
+    for k, v of @UNIT_PARAMETERS
+      predefinedThangs.push(k + '-red')
+      predefinedThangs.push(k + '-blue')
+    predefinedThangs.push('peasant-red')
+    predefinedThangs.push('peasant-blue')
+    for k, v of @THANG_PARAMETERS when k != "peasant" and k != "hero"
+      predefinedThangs.push(k + '-green')
+
+    for thang in predefinedThangs
+      th = @world.getThangByID(thang)
       th.setExists(false)
     @prepareGame()
 
