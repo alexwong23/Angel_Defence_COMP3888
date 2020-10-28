@@ -61,7 +61,6 @@ while True:
     knights = hero.findByType("knight", hero.findFriends())
     if hero.gold > hero.costOf("knight"):
         game.spawn("knight")
-
     enemy = hero.findNearestEnemy()
     item = hero.findNearestItem()
     if item and hero.health < 150:

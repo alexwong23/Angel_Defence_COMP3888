@@ -1,6 +1,8 @@
-{ArgumentError} = require 'lib/world/errors'
+{ArgumentError} = require "lib/world/errors"
 {
   # ANGEL DEFENCE 2 REFEREE CODE
+
+#################################### PARAMETERS ############################################
 
   # object contains attributes of hero and neutrals
   THANG_PARAMETERS: {
@@ -113,6 +115,8 @@
   # array of allowed unit events, this is used in game.setActionFor()
   ALLOWED_UNIT_EVENT_NAMES: ["spawn", "attack", "defend", "update"]
 
+#################################### SET UP GAME ############################################
+
   # set up functions player can use in the game along with set up hero properties
   setupGlobal: (hero, color) ->
     # defined our user functions here, game.spawn()
@@ -125,6 +129,8 @@
       changeActionFor: @changeActionFor.bind(@, hero, color),
       changeActionForUnit: @changeActionForUnit.bind(@, hero, color),
       removeActionForUnit: @removeActionForUnit.bind(@, hero, color),
+      setPatrolFor: @setPatrolFor.bind(@, hero, color),
+      changePatrolFor: @changePatrolFor.bind(@, hero, color),
       spawn: @spawnUserMethod.bind(@, hero, color),
       spawnArray: @spawnArray.bind(@, hero, color),
       costOfSpawnArray: @costOfSpawnArray.bind(@, hero, color)
@@ -132,9 +138,9 @@
     aether = @world.userCodeMap[hero.id]?.plan
     esperEngine = aether?.esperEngine
     if esperEngine
-      esperEngine.options.foreignObjectMode = 'smart'
+      esperEngine.options.foreignObjectMode = "smart"
       esperEngine.options.bookmarkInvocationMode = "loop"
-      esperEngine.addGlobal?('game', game)
+      esperEngine.addGlobal?("game", game)
     # set hero attributes
     heroStats = @THANG_PARAMETERS["hero"]
     hero.health = heroStats.health
@@ -182,7 +188,7 @@
     @unitCounter = {} # objects is populated with total number of unit types built, includes creeps, units and neutrals
     @ref = @world.getThangByID("ref")
     @ref.say("Angel Defence 2.0")
-    @inventory = @world.getSystem 'Inventory' # used to get manipulate teams' gold
+    @inventory = @world.getSystem "Inventory" # used to get manipulate teams' gold
 
 
   # one of the four main functions provided by CodeCombat interface
@@ -195,12 +201,12 @@
     # prevent the thangs outside the map from attacking one another
     predefinedThangs = []
     for k, v of @UNIT_PARAMETERS
-      predefinedThangs.push(k + '-red')
-      predefinedThangs.push(k + '-blue')
-    predefinedThangs.push('peasant-red')
-    predefinedThangs.push('peasant-blue')
+      predefinedThangs.push(k + "-red")
+      predefinedThangs.push(k + "-blue")
+    predefinedThangs.push("peasant-red")
+    predefinedThangs.push("peasant-blue")
     for k, v of @THANG_PARAMETERS when k != "peasant" and k != "hero"
-      predefinedThangs.push(k + '-green')
+      predefinedThangs.push(k + "-green")
 
     for thang in predefinedThangs
       th = @world.getThangByID(thang)
@@ -272,10 +278,12 @@
     @setTimeout(@startGame.bind(@), 4) # start the game after four seconds
 
   # clear the battlefield of dead creeps/neutrals when the total is a multiple of 10
+  # when spawnables/creep/neutral has no health, it is considered dead and its body disappears
   clearField: ->
     if @thangsInGame.length % 10 == 0
-      # when creep/neutral has no health, it is considered dead and its body disappears
       for u in @thangsInGame when u.health <= 0
+        u.setExists(false)
+      for u in @spawnablesInGame when u.health <= 0
         u.setExists(false)
 
   # clear spawn positions and referee messages when round starts
@@ -304,7 +312,7 @@
   # timeout: break ties by comparing: angel health > total team gold > hero health
   checkWinner: () ->
     return if not @gameStarted
-    @existence = @world.getSystem 'Existence'
+    @existence = @world.getSystem "Existence"
 
     # if angel is destroyed, show the ruins
     if @bangel.health <= 0 and @rangel.health <= 0
@@ -368,11 +376,13 @@
     @bruin.setExists(true)
     @bruin.alpha = 1
 
+#################################### BUILD THANGS ############################################
+
   # build a medium health potion at the x y coordinate
   createPotion:(pos) ->
     @build "health-potion-medium"
     builtPotion = @performBuild()
-    builtPotion.team = 'neutral'
+    builtPotion.team = "neutral"
     builtPotion.pos.x = pos.x
     builtPotion.pos.y = pos.y
     builtPotion.collectableProperties[0][0][1] = 200
@@ -393,8 +403,8 @@
     warlock.performAttack = (target, damageRatio=1, momentum=null) =>
       return unless target.hasEffects
       warlock.oldperformAttack(target, damageRatio, momentum)
-      target.effects = (e for e in target.effects when e.name isnt 'slow')
-      target.addEffect {name: 'slow', duration: 2, reverts: true, factor: slowAmount, targetProperty: 'maxSpeed'}
+      target.effects = (e for e in target.effects when e.name isnt "slow")
+      target.addEffect {name: "slow", duration: 2, reverts: true, factor: slowAmount, targetProperty: "maxSpeed"}
 
   # changes buffer attack property, heals weak allies
   setUpBufferHeal: (buffer, healingAmount) ->
@@ -415,9 +425,9 @@
       # heal the weakest ally every time buffer attacks
       if weakestAlly && weakestAlly.effects
         weakestAlly.health = Math.min(weakestAlly.health + healingAmount, weakestAlly.maxHealth)
-        weakestAlly.keepTrackedProperty('health')
-        weakestAlly.effects = (e for e in weakestAlly.effects when e.name isnt 'heal')
-        weakestAlly.addEffect {name: 'heal', duration: 0.5, reverts: true, setTo: true, targetProperty: 'beingHealed'}
+        weakestAlly.keepTrackedProperty("health")
+        weakestAlly.effects = (e for e in weakestAlly.effects when e.name isnt "heal")
+        weakestAlly.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
 
   # set up the unit, its stats, color and unit type
   setupThang: (unit, unitType, color, params) ->
@@ -493,10 +503,10 @@
   # choose a neutral type to spawn at random
   spawnNeutralChance: () ->
     spawnChances = [
-      [0, 'fmunchkin']
-      [35, 'mmunchkin']
-      [70, 'bthrower']
-      [99, 'brawler']
+      [0, "fmunchkin"]
+      [35, "mmunchkin"]
+      [70, "bthrower"]
+      [99, "brawler"]
     ]
     n = 100 * @world.rand.randf()
     returnType: ""
@@ -574,27 +584,69 @@
     all_cost *= Math.max (1 - (unitTypesArray.length - 1)*0.1),0.6
     return all_cost
 
+  # overrides the unit's attack, allowing it to patrol
+  onUnitPatrol: (unit, type, patrolObject) ->
+    unit.oldattack = unit.attack
+    unit.attack = (target) =>
+      distance = unit.distance target
+      unit.patrolChaseRange = patrolObject["patrolChaseRange"]
+      # preserve out-of-range aggro while keeping useful target switching to nearest enemy
+      if distance < unit.attackRange
+        unit.oldattack(target)
+      else if distance < unit.patrolChaseRange
+        unit.currentSpeedRatio = 1
+        #TODO: how to make unit chase target, follow function doesnt exist
+        unit.move(target.pos)
+      else
+        unit.patrolPoints = patrolObject["patrolPoints"]
+
   # function to assign a behaviour to the unit
   onUnitEvent: (unit, type, fn) ->
+    # if unit has a patrol, allow it to patrol
+    # TODO: check if the question mark is needed
+    if @actionHelpers[unit.color]?[type]?["patrol"] != undefined
+      @onUnitPatrol(unit, type, @actionHelpers[unit.color][type]["patrol"])
     if not unit.on
       console.warn("#{type} need hasEvent")
     unit.didTriggerSpawnEvent = true
     unit.off("spawn")
     unit.on("spawn", fn)
 
-  ## USER FUNCTIONS
+  getTeamFromColor: (color) ->
+    if color is "red"
+      return "humans"
+    return "ogres"
 
-  # allows users to assign units of unitType, a function on an allowed event
-  # the unit has to exist and can be controlled, before it behaves as instructed in the function
-  # setPatrolPointsFor: (hero, color, type, patrolPoints, patrolChaseRange) ->
-  #   if not @UNIT_PARAMETERS[type]
-  #     throw new ArgumentError "Please specify one of the eight spawnable units.", "spawn", "unitType", "spawnable", type
-  #   for th in @world.thangs when th.health > 0 and th.type == type
-  #     console.log(th.id)
-  #     th.patrolPoints = patrolPoints
-  #     th.patrolChaseRange = patrolChaseRange
+#################################### USER FUNCTIONS ############################################
 
-  # allows users to assign units of unitType, a function on an allowed event
+  # allows users to assign spawnable units of unitType, a patrol path
+  setPatrolFor: (hero, color, type, patrolChaseRange, patrolPoints) ->
+    if not @UNIT_PARAMETERS[type]
+      throw new ArgumentError "Please specify one of the eight spawnable units.", "setPatrolFor", "type", "spawnable", type
+    # TODO: check if patrolChaseRangeRange is an integer between a strict range...
+    # TODO: check if position in positions are x y  coordinates i.e. [{"y":58}, {"x":63,"y":43}] fails
+    if not patrolPoints or not patrolPoints.length
+      throw new ArgumentError "Please provide an array of valid xy coordinates.", "setPatrolFor", "patrolPoints", "{\"x\":99,\"y\":99}", patrolPoints
+    @actionHelpers[color][type] ?= {}
+    @actionHelpers[color][type]["patrol"] ?= {}
+    @actionHelpers[color][type]["patrol"]["patrolChaseRange"] = patrolChaseRange
+    @actionHelpers[color][type]["patrol"]["patrolPoints"] = patrolPoints
+
+  # allows users to change patrol points for spawnable units of unitType
+  changePatrolFor: (hero, color, type, patrolChaseRange, patrolPoints) ->
+    return if not @gameStarted
+    if not @UNIT_PARAMETERS[type]
+      throw new ArgumentError "Please specify one of the eight spawnable units.", "changePatrolFor", "type", "spawnable", type
+    # TODO: check if patrolChaseRangeRange is an integer between a strict range...
+    # TODO: check if position in positions are x y  coordinates i.e. [{"y":58}, {"x":63,"y":43}] fails
+    if not patrolPoints or not patrolPoints.length
+      throw new ArgumentError "Please provide an array of valid xy coordinates.", "changePatrolFor", "patrolPoints", "{\"x\":99,\"y\":99}", patrolPoints
+    if @actionHelpers[color]?[type]?["patrol"] == undefined
+      throw new ArgumentError "This unit type is not patrolling.", "changePatrolFor", "type", "spawnable", type
+    @actionHelpers[color][type]["patrol"]["patrolChaseRange"] = patrolChaseRange
+    @actionHelpers[color][type]["patrol"]["patrolPoints"] = patrolPoints
+
+  # allows users to assign spawnable units of unitType, a function on an allowed event
   # the unit has to exist and can be controlled, before it behaves as instructed in the function
   setActionFor: (hero, color, type, event, fn) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
@@ -606,6 +658,7 @@
 
   # allows users to change the behaviour of all units of type
   changeActionFor: (hero, color, type, event) ->
+    return if not @gameStarted
     if event not in @ALLOWED_UNIT_EVENT_NAMES
       throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
     if not @UNIT_PARAMETERS[type]
@@ -617,6 +670,7 @@
 
   # allows users to change the behaviour of an individual unit
   changeActionForUnit: (hero, color, unit, fn) ->
+    return if not @gameStarted
     if not unit or not unit.id or not @world.getThangByID(unit.id)
       throw new ArgumentError "Please provide a unit", "changeActionForUnit", "unit", "spawnable", unit
     if not @UNIT_PARAMETERS[unit.type]
@@ -625,9 +679,11 @@
     @actionHelpers[color][unit.id] = fn
     if fn and _.isFunction(fn) and unit.exists and unit.color is color
         @onUnitEvent(unit, unit.id, fn)
+        console.log(unit.id + " change action for unit")
 
   # allows users to remove the behaviour of an individual unit so it can be controlled using changeActionFor
   removeActionForUnit: (hero, color, unit) ->
+    return if not @gameStarted
     if not unit or not unit.id or not @world.getThangByID(unit.id)
       throw new ArgumentError "Please provide a unit", "changeActionForUnit", "unit", "spawnable", unit
     if not @UNIT_PARAMETERS[unit.type]
@@ -640,18 +696,12 @@
     return if not @gameStarted
     if not @UNIT_PARAMETERS[unitType]
       throw new ArgumentError "Please specify one of the eight spawnable units.", "spawn", "unitType", "spawnable", unitType
-    team: ""
-    if color is "red"
-      team = "humans"
-    else
-      team = "ogres"
-
+    team = @getTeamFromColor(color)
     fullType = "#{unitType}-#{color}"
     #console.log unitType, ' requires gold cost ', @buildables[fullType].goldCost
     if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
       @createSpawnable(team, color, fullType, unitType)
-
 
   # allows users to check if they have enough gold to spawn units in the array
   # throws argument error if any unit type is not spawnable
@@ -664,17 +714,10 @@
   # if the player has enough gold, deduct gold and spawn the units
   spawnArray: (hero, color, unitTypesArray) ->
     return if not @gameStarted
-
     # get the player's team so we can deduct their gold
-    team: ""
-    if color is "red"
-      team = "humans"
-    else
-      team = "ogres"
-
+    team = @getTeamFromColor(color)
     # calculate discounted cost
     all_cost = @calculateSpawnArray(color, unitTypesArray)
-
     # if player has enough gold, spawn all units
     if @inventory.goldForTeam(team) >= all_cost
       @inventory.subtractGoldForTeam team, all_cost
