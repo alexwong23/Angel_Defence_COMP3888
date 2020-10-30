@@ -280,7 +280,7 @@
   # clear the battlefield of dead creeps/neutrals when the total is a multiple of 10
   # when spawnables/creep/neutral has no health, it is considered dead and its body disappears
   clearField: ->
-    if @thangsInGame.length % 10 == 0
+    if @thangsInGame.length % 8 == 0
       for u in @thangsInGame when u.health <= 0
         u.setExists(false)
       for u in @spawnablesInGame when u.health <= 0
@@ -449,11 +449,11 @@
     unit.color = color
     unit.startsPeaceful = true
 
+    # set up caster attack
     if unit.type is "warlock" # warlock slows enemies
       @setUpWarlockSlow(unit, params.slowAmount)
     else if unit.type is "buffer" # buffer heals lowest health allies
       @setUpBufferHeal(unit, params.healingAmount)
-
     return unit
 
   # create a thang at the position
@@ -540,7 +540,6 @@
     return if not @UNIT_PARAMETERS[unitType]
 
     spawnableUnit = @createThang(unitType, color, 1)
-
     return spawnableUnit
 
   # sets up a controllable unit
@@ -585,25 +584,21 @@
     return all_cost
 
   # overrides the unit's attack, allowing it to patrol
+  # attack enemy only if within unit's attack range or chaseRange
   onUnitPatrol: (unit, type, patrolObject) ->
+    unit.patrolChaseRange = patrolObject["patrolChaseRange"]
+    unit.currentSpeedRatio = 1
     unit.oldattack = unit.attack
     unit.attack = (target) =>
       distance = unit.distance target
-      unit.patrolChaseRange = patrolObject["patrolChaseRange"]
-      # preserve out-of-range aggro while keeping useful target switching to nearest enemy
-      if distance < unit.attackRange
+      if distance < unit.attackRange or distance < unit.patrolChaseRange
         unit.oldattack(target)
-      else if distance < unit.patrolChaseRange
-        unit.currentSpeedRatio = 1
-        #TODO: how to make unit chase target, follow function doesnt exist
-        unit.move(target.pos)
       else
         unit.patrolPoints = patrolObject["patrolPoints"]
 
   # function to assign a behaviour to the unit
   onUnitEvent: (unit, type, fn) ->
     # if unit has a patrol, allow it to patrol
-    # TODO: check if the question mark is needed
     if @actionHelpers[unit.color]?[type]?["patrol"] != undefined
       @onUnitPatrol(unit, type, @actionHelpers[unit.color][type]["patrol"])
     if not unit.on
@@ -624,6 +619,7 @@
     if not @UNIT_PARAMETERS[type]
       throw new ArgumentError "Please specify one of the eight spawnable units.", "setPatrolFor", "type", "spawnable", type
     # TODO: check if patrolChaseRangeRange is an integer between a strict range...
+    # TODO: chaseRange has to be 1 and above!
     # TODO: check if position in positions are x y  coordinates i.e. [{"y":58}, {"x":63,"y":43}] fails
     if not patrolPoints or not patrolPoints.length
       throw new ArgumentError "Please provide an array of valid xy coordinates.", "setPatrolFor", "patrolPoints", "{\"x\":99,\"y\":99}", patrolPoints
@@ -638,6 +634,7 @@
     if not @UNIT_PARAMETERS[type]
       throw new ArgumentError "Please specify one of the eight spawnable units.", "changePatrolFor", "type", "spawnable", type
     # TODO: check if patrolChaseRangeRange is an integer between a strict range...
+    # TODO: chaseRange has to be 1 and above!
     # TODO: check if position in positions are x y  coordinates i.e. [{"y":58}, {"x":63,"y":43}] fails
     if not patrolPoints or not patrolPoints.length
       throw new ArgumentError "Please provide an array of valid xy coordinates.", "changePatrolFor", "patrolPoints", "{\"x\":99,\"y\":99}", patrolPoints

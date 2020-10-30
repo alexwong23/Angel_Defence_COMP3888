@@ -11,7 +11,7 @@
 # TAKE NOTE: Detailed examples of these methods can be found in the documentation. GLHF! :)
 
 # A. SET UNIT BEHAVIOURS HERE
-# warriors attack the nearest enemy
+# thiefs attack the nearest enemy
 
 def knightSpawnFunction(e):
     me = e.target
@@ -34,7 +34,7 @@ def knightDefendFunction(e):
         else:
             me.move(ownTower.pos)
 
-def archerSpawnFunction(e):
+def thiefSpawnFunction(e):
     me = e.target
     while True:
         enemy = me.findNearestEnemy()
@@ -42,13 +42,13 @@ def archerSpawnFunction(e):
             me.attack(enemy)
 
 # B. SET UNIT ACTIONS HERE
-# all warrior units will behave as instructed in the function 'warriorSpawnFunction'
+# all thief units will behave as instructed in the function 'thiefSpawnFunction'
 # add the behaviour into the game.setActionFor user method
 game.setActionFor("knight", "spawn", knightSpawnFunction)
 game.setActionFor("knight", "defend", knightDefendFunction)
-game.setActionFor("archer", "spawn", archerSpawnFunction)
-game.setPatrolFor("archer", 5, [{"x":63,"y":45}, {"x":55,"y":55}]) # blue
-# game.setPatrolFor("archer", 5, [{"x":17,"y":24}, {"x":29,"y":14}]) # red
+game.setActionFor("thief", "spawn", thiefSpawnFunction)
+game.setPatrolFor("thief", 10, [{"x":63,"y":45}, {"x":55,"y":55}]) # blue
+# game.setPatrolFor("thief", 10, [{"x":20,"y":26}, {"x":29,"y":15}]) # red
 
 # C. SOME HELPFUL VARIABLES
 # use these methods to locate units in the game, both friends and enemies
@@ -59,11 +59,11 @@ ownAngel = hero.findByType("angel-fountain", hero.findFriends())[0]
 
 # D. GAME LOGIC HERE
 while True:
-    # spawn warrior units, one of the eight unique unit types
+    # spawn thief units, one of the eight unique unit types
     knights = hero.findByType("knight", hero.findFriends())
-    archers = hero.findByType("archer", hero.findFriends())
-    if hero.gold > hero.costOf("archer") and len(archers) < 2:
-        game.spawn("archer")
+    thiefs = hero.findByType("thief", hero.findFriends())
+    if hero.gold > hero.costOf("thief") and len(thiefs) < 1:
+        game.spawn("thief")
     else:
         game.spawn("knight")
 
@@ -77,14 +77,14 @@ while True:
     elif not item and hero.health < 200:
         hero.move(ownAngel.pos)
         game.changeActionFor("knight", "defend")
-        game.changePatrolFor("archer", 5, [{"x":77,"y":52}, {"x":77,"y":41}]) # blue
-        # game.changePatrolFor("archer", 5, [{"x":4,"y":25}, {"x":4,"y":12}]) # red
+        game.changePatrolFor("thief", 20, [{"x":77,"y":52}, {"x":77,"y":41}]) # blue
+        # game.changePatrolFor("thief", 20, [{"x":4,"y":25}, {"x":4,"y":12}]) # red
     # E.3 hero attacks nearby enemies
     elif enemy:
         hero.attack(enemy)
         game.changeActionFor("knight", "spawn")
-        game.changePatrolFor("archer", 5, [{"x":63,"y":45}, {"x":55,"y":55}]) # blue
-        # game.changePatrolFor("archer", 5, [{"x":17,"y":24}, {"x":29,"y":14}]) # red
+        game.changePatrolFor("thief", 10, [{"x":63,"y":45}, {"x":55,"y":55}]) # blue
+        # game.changePatrolFor("thief", 10, [{"x":20,"y":26}, {"x":29,"y":15}]) # red
     # E.4 hero attacks enemy angel
     elif enemyAngel:
         hero.attack(enemyAngel)
