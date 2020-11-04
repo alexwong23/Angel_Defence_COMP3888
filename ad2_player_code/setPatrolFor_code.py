@@ -34,26 +34,17 @@ def knightDefendFunction(e):
         else:
             me.move(ownTower.pos)
 
-def thiefSpawnFunction(e):
-    me = e.target
-    while True:
-        enemy = me.findNearestEnemy()
-        if enemy:
-            me.attack(enemy)
-
 # B. SET UNIT ACTIONS HERE
-# all thief units will behave as instructed in the function 'thiefSpawnFunction'
+# all knight units will behave as instructed in the function 'knightSpawnFunction'
 # add the behaviour into the game.setActionFor user method
 game.setActionFor("knight", "spawn", knightSpawnFunction)
 game.setActionFor("knight", "defend", knightDefendFunction)
-game.setActionFor("thief", "spawn", thiefSpawnFunction)
 game.setPatrolFor("thief", 10, [{"x":63,"y":45}, {"x":55,"y":55}]) # blue
 # game.setPatrolFor("thief", 10, [{"x":20,"y":26}, {"x":29,"y":15}]) # red
 
 # C. SOME HELPFUL VARIABLES
-# use these methods to locate units in the game, both friends and enemies
+# use these methods to locate units in the game, both friends and enemies within 60
 enemyHero = hero.findByType("duelist", hero.findEnemies())[0]
-enemyAngel = hero.findByType("angel-fountain", hero.findEnemies())[0]
 ownTower = hero.findByType("arrow-tower", hero.findFriends())[0]
 ownAngel = hero.findByType("angel-fountain", hero.findFriends())[0]
 
@@ -77,7 +68,7 @@ while True:
     elif not item and hero.health < 200:
         hero.move(ownAngel.pos)
         game.changeActionFor("knight", "defend")
-        game.changePatrolFor("thief", 20, [{"x":77,"y":52}, {"x":77,"y":41}]) # blue
+        game.changePatrolFor("thief", 10, [{"x":77,"y":52}, {"x":77,"y":41}]) # blue
         # game.changePatrolFor("thief", 20, [{"x":4,"y":25}, {"x":4,"y":12}]) # red
     # E.3 hero attacks nearby enemies
     elif enemy:
@@ -85,6 +76,3 @@ while True:
         game.changeActionFor("knight", "spawn")
         game.changePatrolFor("thief", 10, [{"x":63,"y":45}, {"x":55,"y":55}]) # blue
         # game.changePatrolFor("thief", 10, [{"x":20,"y":26}, {"x":29,"y":15}]) # red
-    # E.4 hero attacks enemy angel
-    elif enemyAngel:
-        hero.attack(enemyAngel)

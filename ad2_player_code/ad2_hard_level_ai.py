@@ -31,9 +31,8 @@ def archerSpawnFunction(e):
 game.setActionFor("archer", "spawn", archerSpawnFunction)
 
 # C. SOME HELPFUL VARIABLES
-# use these methods to locate units in the game, both friends and enemies
+# use these methods to locate units in the game, both friends and enemies within 60
 enemyHero = hero.findByType("duelist", hero.findEnemies())[0]
-enemyAngel = hero.findByType("angel-fountain", hero.findEnemies())[0]
 ownTower = hero.findByType("arrow-tower", hero.findFriends())[0]
 ownAngel = hero.findByType("angel-fountain", hero.findFriends())[0]
 
@@ -55,6 +54,3 @@ while True:
     # E.3 hero attacks nearby enemies
     elif enemy:
         hero.attack(enemy)
-    # E.4 hero attacks enemy angel
-    elif enemyAngel:
-        hero.attack(enemyAngel)

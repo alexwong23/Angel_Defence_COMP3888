@@ -583,6 +583,7 @@
     # return just to be safe, this check is already done by the functions that call it
     return if not @UNIT_PARAMETERS[unitType]
 
+    # build the spawnable unit
     unit = @setUpSpawnable(unitType, color, 1)
     unit.commander = null
     if unit.color is "red"
@@ -591,13 +592,14 @@
       unit.commander = @hero2
     @spawnablesInGame.push(unit)
 
-    # assigns the controllable unit the spawn behaviour
+    # give the unit either a patrol, unit type spawn behaviour or individual unit behaviour
+    # order: patrol behaviour > individual spawn behaviour > unit type spawn behaviour
     fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
-    # replace spawn fn if unit has been given an individual spawn behaviour
     if @actionHelpers[unit.color]?[unit.id]?["spawn"]
       fn = @actionHelpers[unit.color]?[unit.id]?["spawn"]
-      console.log(unit.id + " has a function")
-    if fn and _.isFunction(fn)
+    if @actionHelpers[unit.color]?[unit.type]?["patrol"] != undefined
+      @onUnitPatrol(unit, unitType, @actionHelpers[unit.color][unit.type]["patrol"])
+    else if fn and _.isFunction(fn)
       @onUnitEvent(unit, unitType, fn)
 
 ############################# USER METHOD HELPER FUNCTIONS #######################################
@@ -612,16 +614,15 @@
     return invalidPoint
 
   # function to calculate the discounted price of using the user method game.spawnArray
+  # 2 units: 10% off
+  # 3 units: 20% off
+  # 4 units: 30% off
+  # 5 and above units: 40% off
   calculateSpawnArray: (color, unitTypesArray) ->
     # check if all units in array is in @UNIT_PARAMETERS[unitType]
     for unitType in unitTypesArray
       if not @UNIT_PARAMETERS[unitType]
         throw new ArgumentError "Please specify one of the eight spawnable units.", "spawnArray", "unitType", "spawnable", unitType
-    # calculate the total cost of units in the array after applying discounts
-    # 2 units: 10% off
-    # 3 units: 20% off
-    # 4 units: 30% off
-    # 5 and above units: 40% off
     all_cost = 0
     for unitType in unitTypesArray
       fullType = "#{unitType}-#{color}"
@@ -633,6 +634,7 @@
   # attack enemy only if within unit's attack range or chaseRange
   onUnitPatrol: (unit, type, patrolObject) ->
     unit.patrolChaseRange = patrolObject["patrolChaseRange"]
+    unit.patrolPoints = patrolObject["patrolPoints"]
     unit.currentSpeedRatio = 1
     unit.oldattack = unit.attack
     unit.attack = (target) =>
@@ -640,20 +642,16 @@
         distance = unit.distance target
         if distance < unit.attackRange or distance < unit.patrolChaseRange
           unit.oldattack(target)
-        else
-          unit.patrolPoints = patrolObject["patrolPoints"]
 
   # function to assign a behaviour to the unit
   onUnitEvent: (unit, type, fn) ->
-    # if unit has a patrol, allow it to patrol
-    if @actionHelpers[unit.color]?[type]?["patrol"] != undefined
-      @onUnitPatrol(unit, type, @actionHelpers[unit.color][type]["patrol"])
     if not unit.on
       console.warn("#{type} need hasEvent")
     unit.didTriggerSpawnEvent = true
     unit.off("spawn")
     unit.on("spawn", fn)
 
+  # function takes color and returns team name
   getTeamFromColor: (color) ->
     if color is "red"
       return "humans"
@@ -687,8 +685,13 @@
       throw new ArgumentError "Please provide an array of valid xy coordinates.", "changePatrolFor", "patrolPoints", "{\"x\":number,\"y\":number}", invalidPoint
     if @actionHelpers[color]?[type]?["patrol"] == undefined
       throw new ArgumentError "This unit type is not patrolling.", "changePatrolFor", "type", "spawnable", type
+
+    # so newly spawned units will follow the updated patrol points
     @actionHelpers[color][type]["patrol"]["patrolChaseRange"] = patrolChaseRange
     @actionHelpers[color][type]["patrol"]["patrolPoints"] = patrolPoints
+    for unit in @world.thangs when unit.type is type and unit.exists and unit.color is color
+      unit.patrolChaseRange = patrolChaseRange
+      unit.patrolPoints = patrolPoints
 
   # allows users to assign spawnable units of unitType, a function on an allowed event
   # the unit has to exist and can be controlled, before it behaves as instructed in the function
@@ -725,7 +728,6 @@
     @actionHelpers[color][unit.id] = fn
     if fn and _.isFunction(fn) and unit.exists and unit.color is color
         @onUnitEvent(unit, unit.id, fn)
-        console.log(unit.id + " change action for unit")
 
   # allows users to remove the behaviour of an individual unit so it can be controlled using changeActionFor
   removeActionForUnit: (hero, color, unit) ->

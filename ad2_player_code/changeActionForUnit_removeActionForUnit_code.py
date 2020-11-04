@@ -51,9 +51,8 @@ game.setActionFor("knight", "spawn", knightSpawnFunction)
 game.setActionFor("knight", "defend", knightDefendFunction)
 game.setActionFor("knight", "attack", knightAttackFunction)
 
-# find important thangs by type
+# use these methods to locate units in the game, both friends and enemies within 60
 enemyHero = hero.findByType("duelist", hero.findEnemies())[0]
-enemyAngel = hero.findByType("angel-fountain", hero.findEnemies())[0]
 ownAngel = hero.findByType("angel-fountain", hero.findFriends())[0]
 ownTower = hero.findByType("arrow-tower", hero.findFriends())[0]
 
@@ -80,5 +79,3 @@ while True:
         if len(knights) >= 1:
             game.changeActionForUnit(knights[0], oneKnightDefendFunction)
         hero.attack(enemy)
-    elif enemyAngel:
-        hero.attack(enemyAngel)
