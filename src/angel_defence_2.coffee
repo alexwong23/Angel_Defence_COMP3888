@@ -213,7 +213,6 @@
       th.setExists(false)
     @prepareGame()
 
-
   # one of the four main functions provided by CodeCombat interface
   # this function performs like a while loop, running throughout the game
   # function run only when game starts
@@ -277,6 +276,39 @@
     @setTimeout((() => @ref.say("Fight!")), 4)
     @setTimeout(@clearRects.bind(@), 1) # spawn positions disappear after the first second
     @setTimeout(@startGame.bind(@), 4) # start the game after four seconds
+
+  # Units within a 10m radius of their own angel will get healed
+  # Healing not possible if the angel is destroyed
+  healThangHelper: (unit) ->
+    # Red unit near red angel
+    if unit.color is "red" and @rangel.exists == true
+      if Math.abs(@rangel.pos.x - unit.pos.x) <= 10 and Math.abs(@rangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
+        unit.health += 1
+        unit.say("+health")
+        # unit.effects = (e for e in unit.effects when e.name isnt "heal")
+        # unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
+
+    # Blue unit near blue angel
+    else if unit.color is "blue" and @bangel.exists == true
+        if Math.abs(@bangel.pos.x - unit.pos.x) <= 10 and Math.abs(@bangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
+          unit.health += 1
+          unit.say("+health")
+          # unit.effects = (e for e in unit.effects when e.name isnt "heal")
+          # unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
+
+  # Units can regenerate health if near their own angel
+  healThangNearAngel: () ->
+    time = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
+    if time % 1.0 == 0 # heal every sec
+      # Heal heroes
+      @healThangHelper(@hero)
+      @healThangHelper(@hero2)
+      # Heal spawnables
+      for spawnable in @spawnablesInGame when spawnable.exists and spawnable.health > 0
+        @healThangHelper(spawnable)
+      # Heal creeps
+      for thang in @thangsInGame when thang.exists and thang.health > 0 and thang.team != "neutral"
+        @healThangHelper(thang)
 
   # clear the battlefield of dead creeps/neutrals when the total is a multiple of 10
   # when spawnables/creep/neutral has no health, it is considered dead and its body disappears
@@ -568,6 +600,17 @@
     if fn and _.isFunction(fn)
       @onUnitEvent(unit, unitType, fn)
 
+############################# USER METHOD HELPER FUNCTIONS #######################################
+
+  # helper function to catch invalid patrol points in user methods setPatrolFor and changePatrolFor
+  checkPatrolPoints: (patrolPoints) ->
+    invalidPoint = false
+    for point in patrolPoints
+      if not (point["x"] and point["y"])
+        invalidPoint = point
+        break
+    return invalidPoint
+
   # function to calculate the discounted price of using the user method game.spawnArray
   calculateSpawnArray: (color, unitTypesArray) ->
     # check if all units in array is in @UNIT_PARAMETERS[unitType]
@@ -616,50 +659,17 @@
       return "humans"
     return "ogres"
 
-  # Units within a 10m radius of their own angel will get healed
-  # Healing not possible if the angel is destroyed
-  healThangHelper: (unit) ->
-    # Red unit near red angel
-    if unit.color is "red" and @rangel.exists == true
-      if Math.abs(@rangel.pos.x - unit.pos.x) <= 10 and Math.abs(@rangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
-        unit.health += 1
-        unit.say("+health")
-        # unit.effects = (e for e in unit.effects when e.name isnt "heal")
-        # unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
-
-    # Blue unit near blue angel
-    else if unit.color is "blue" and @bangel.exists == true
-        if Math.abs(@bangel.pos.x - unit.pos.x) <= 10 and Math.abs(@bangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
-          unit.health += 1
-          unit.say("+health")
-          # unit.effects = (e for e in unit.effects when e.name isnt "heal")
-          # unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
-
-  # Units can regenerate health if near their own angel
-  healThangNearAngel: () ->
-    time = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
-    if time % 1.0 == 0 # heal every sec
-      # Heal heroes
-      @healThangHelper(@hero)
-      @healThangHelper(@hero2)
-      # Heal spawnables
-      for spawnable in @spawnablesInGame when spawnable.exists and spawnable.health > 0
-        @healThangHelper(spawnable)
-      # Heal creeps
-      for thang in @thangsInGame when thang.exists and thang.health > 0 and thang.team != "neutral"
-        @healThangHelper(thang)
-
 #################################### USER FUNCTIONS ############################################
 
   # allows users to assign spawnable units of unitType, a patrol path
   setPatrolFor: (hero, color, type, patrolChaseRange, patrolPoints) ->
     if not @UNIT_PARAMETERS[type]
       throw new ArgumentError "Please specify one of the eight spawnable units.", "setPatrolFor", "type", "spawnable", type
-    # TODO: check if patrolChaseRangeRange is an integer between a strict range...
-    # TODO: chaseRange has to be 1 and above!
-    # TODO: check if position in positions are x y  coordinates i.e. [{"y":58}, {"x":63,"y":43}] fails
-    if not patrolPoints or not patrolPoints.length
-      throw new ArgumentError "Please provide an array of valid xy coordinates.", "setPatrolFor", "patrolPoints", "{\"x\":99,\"y\":99}", patrolPoints
+    if patrolChaseRange < 1 or patrolChaseRange > 100
+      throw new ArgumentError "The Patrol Chase Range has to be between 1 and 100.", "setPatrolFor", "patrolChaseRange"
+    invalidPoint = @checkPatrolPoints(patrolPoints)
+    if (not patrolPoints or not patrolPoints.length) or invalidPoint
+      throw new ArgumentError "Please provide an array of valid xy coordinates.", "setPatrolFor", "patrolPoints", "{\"x\":number,\"y\":number}", invalidPoint
     @actionHelpers[color][type] ?= {}
     @actionHelpers[color][type]["patrol"] ?= {}
     @actionHelpers[color][type]["patrol"]["patrolChaseRange"] = patrolChaseRange
@@ -670,11 +680,11 @@
     return if not @gameStarted
     if not @UNIT_PARAMETERS[type]
       throw new ArgumentError "Please specify one of the eight spawnable units.", "changePatrolFor", "type", "spawnable", type
-    # TODO: check if patrolChaseRangeRange is an integer between a strict range...
-    # TODO: chaseRange has to be 1 and above!
-    # TODO: check if position in positions are x y  coordinates i.e. [{"y":58}, {"x":63,"y":43}] fails
-    if not patrolPoints or not patrolPoints.length
-      throw new ArgumentError "Please provide an array of valid xy coordinates.", "changePatrolFor", "patrolPoints", "{\"x\":99,\"y\":99}", patrolPoints
+    if patrolChaseRange < 1 or patrolChaseRange > 100
+      throw new ArgumentError "The Patrol Chase Range has to be between 1 and 100.", "changePatrolFor", "patrolChaseRange"
+    invalidPoint = @checkPatrolPoints(patrolPoints)
+    if (not patrolPoints or not patrolPoints.length) or invalidPoint
+      throw new ArgumentError "Please provide an array of valid xy coordinates.", "changePatrolFor", "patrolPoints", "{\"x\":number,\"y\":number}", invalidPoint
     if @actionHelpers[color]?[type]?["patrol"] == undefined
       throw new ArgumentError "This unit type is not patrolling.", "changePatrolFor", "type", "spawnable", type
     @actionHelpers[color][type]["patrol"]["patrolChaseRange"] = patrolChaseRange
@@ -684,9 +694,11 @@
   # the unit has to exist and can be controlled, before it behaves as instructed in the function
   setActionFor: (hero, color, type, event, fn) ->
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify an allowed event type: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify an allowed event type: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType", "event", event
     if not @UNIT_PARAMETERS[type]
       throw new ArgumentError "Please specify a valid spawnable unit", "setActionFor", "unitType", "spawnable", type
+    if not _.isFunction(fn)
+      throw new ArgumentError "Please provide a valid function", "setActionFor", "function", "function", fn
     @actionHelpers[color][type] ?= {}
     @actionHelpers[color][type][event] = fn
 
@@ -694,9 +706,9 @@
   changeActionFor: (hero, color, type, event) ->
     return if not @gameStarted
     if event not in @ALLOWED_UNIT_EVENT_NAMES
-      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "setActionFor", "eventType"
+      throw new ArgumentError "Please specify one of the following: [\"spawn\", \"attack\", \"defend\", \"update\"]", "changeActionFor", "eventType", "event", event
     if not @UNIT_PARAMETERS[type]
-      throw new ArgumentError "Please specify a valid spawnable unit", "setActionFor", "unitType", "spawnable", type
+      throw new ArgumentError "Please specify a valid spawnable unit", "changeActionFor", "unitType", "spawnable", type
     fn = @actionHelpers[color]?[type]?[event]
     if fn and _.isFunction(fn)
       for unit in @world.thangs when unit.type is type and unit.exists and unit.color is color and not @actionHelpers[unit.color]?[unit.id]
@@ -705,10 +717,10 @@
   # allows users to change the behaviour of an individual unit
   changeActionForUnit: (hero, color, unit, fn) ->
     return if not @gameStarted
-    if not unit or not unit.id or not @world.getThangByID(unit.id)
-      throw new ArgumentError "Please provide a unit", "changeActionForUnit", "unit", "spawnable", unit
     if not @UNIT_PARAMETERS[unit.type]
-      throw new ArgumentError "Please specify a valid spawnable unit", "changeActionForUnit", "unitType", "spawnable", unit.type
+      throw new ArgumentError "Please specify a valid spawnable unit", "changeActionForUnit", "unit", "spawnable", unit
+    if not _.isFunction(fn)
+      throw new ArgumentError "Please provide a valid function", "changeActionForUnit", "function", "function", fn
     # assign a function to it so that changeActionFor does not override this unit's action
     @actionHelpers[color][unit.id] = fn
     if fn and _.isFunction(fn) and unit.exists and unit.color is color
@@ -718,10 +730,10 @@
   # allows users to remove the behaviour of an individual unit so it can be controlled using changeActionFor
   removeActionForUnit: (hero, color, unit) ->
     return if not @gameStarted
-    if not unit or not unit.id or not @world.getThangByID(unit.id)
-      throw new ArgumentError "Please provide a unit", "changeActionForUnit", "unit", "spawnable", unit
+    # if not unit or not unit.id or not @world.getThangByID(unit.id)
+    #   throw new ArgumentError "Please provide a unit", "changeActionForUnit", "unit", "spawnable", unit
     if not @UNIT_PARAMETERS[unit.type]
-      throw new ArgumentError "Please specify a valid spawnable unit", "changeActionForUnit", "unitType", "spawnable", unit.type
+      throw new ArgumentError "Please specify a valid spawnable unit", "removeActionForUnit", "unit", "spawnable", unit
     @actionHelpers[color][unit.id] = null
 
   # allows users to spawn a unit on the command game.spawn('unitType') when the game starts
