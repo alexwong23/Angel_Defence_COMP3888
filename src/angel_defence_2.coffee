@@ -112,6 +112,11 @@
     }
   }
 
+  POTION_RESPAWN: 30.0
+  NEUTRAL_RESPAWN: 15.0
+  CREEP_SPAWN: 5.0
+  ANGEL_HEAL: 1.0
+
   # array of allowed unit events, this is used in game.setActionFor()
   ALLOWED_UNIT_EVENT_NAMES: ["spawn", "attack", "defend", "update"]
 
@@ -124,7 +129,6 @@
     game = {
       randInt: @world.rand.rand2,
       log: console.log
-      # setPatrolPointsFor: @setPatrolPointsFor.bind(@, hero, color),
       setActionFor: @setActionFor.bind(@, hero, color),
       changeActionFor: @changeActionFor.bind(@, hero, color),
       changeActionForUnit: @changeActionForUnit.bind(@, hero, color),
@@ -149,8 +153,8 @@
     hero.attackCooldown = heroStats.attackCooldown
     hero.attackRange = heroStats.attackRange
     hero.speed = heroStats.speed
-    hero.maxSpeed = 0 # prevent movement until start of game
     hero.color = color
+    hero.maxSpeed = 0 # prevent movement until start of game
 
   # initialize and set up the postion for spawning on both sides
   # get spawn positions by id and append of them to a list
@@ -284,22 +288,20 @@
     if unit.color is "red" and @rangel.exists == true
       if Math.abs(@rangel.pos.x - unit.pos.x) <= 10 and Math.abs(@rangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
         unit.health += 1
-        unit.say("+health")
-        # unit.effects = (e for e in unit.effects when e.name isnt "heal")
-        # unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
+        unit.effects = (e for e in unit.effects when e.name isnt "heal")
+        unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
 
     # Blue unit near blue angel
     else if unit.color is "blue" and @bangel.exists == true
-        if Math.abs(@bangel.pos.x - unit.pos.x) <= 10 and Math.abs(@bangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
-          unit.health += 1
-          unit.say("+health")
-          # unit.effects = (e for e in unit.effects when e.name isnt "heal")
-          # unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
+      if Math.abs(@bangel.pos.x - unit.pos.x) <= 10 and Math.abs(@bangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
+        unit.health += 1
+        unit.effects = (e for e in unit.effects when e.name isnt "heal")
+        unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
 
   # Units can regenerate health if near their own angel
   healThangNearAngel: () ->
     time = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
-    if time % 1.0 == 0 # heal every sec
+    if time % @ANGEL_HEAL == 0 # heal every sec
       # Heal heroes
       @healThangHelper(@hero)
       @healThangHelper(@hero2)
@@ -426,7 +428,7 @@
   # every 30 second interval, spawn a potion if the previous potion was taken
   spawnPotions: () ->
     spawnTime = Math.round(@world.age * 10) / 10
-    if spawnTime % 30.0 == 0 # spawn potion every 30 sec interval
+    if spawnTime % @POTION_RESPAWN == 0 # spawn potion every 30 sec interval
       if @potionRight.exists == false
         @potionRight = @createPotion({"x": 49, "y": 30})
       if @potionLeft.exists == false
@@ -527,7 +529,7 @@
   # every 5 second, spawn a creep on either team
   spawnCreeps: () ->
     spawnTime = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
-    if spawnTime % 5.0 == 0 # spawn potion every 5 sec
+    if spawnTime % @CREEP_SPAWN == 0 # spawn potion every 5 sec
       redCreep = @createThang("peasant", "red", 0)
       @setUpCreep(redCreep, [{"x": 70, "y": 55}])
       # @setUpCreep(redCreep, [{"x": 35, "y": 30}, {"x": 45, "y": 35}, {"x": 70, "y": 55}])
@@ -559,7 +561,7 @@
   # every 15 second interval, spawn a neutral on the green positions if the previous neutral was defeated
   spawnNeutrals: () ->
     spawnTime = Math.round(@world.age * 10) / 10
-    if spawnTime % 15.0 == 0 # spawn potion every 15 sec interval
+    if spawnTime % @NEUTRAL_RESPAWN == 0 # spawn potion every 15 sec interval
       buildType = @spawnNeutralChance()
       if @neutralTop.health < 1
         @neutralTop = @createThang(buildType, "green", 0)
