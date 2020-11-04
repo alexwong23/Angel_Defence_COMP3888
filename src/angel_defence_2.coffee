@@ -150,6 +150,7 @@
     hero.attackRange = heroStats.attackRange
     hero.speed = heroStats.speed
     hero.maxSpeed = 0 # prevent movement until start of game
+    hero.color = color
 
   # initialize and set up the postion for spawning on both sides
   # get spawn positions by id and append of them to a list
@@ -190,7 +191,6 @@
     @ref.say("Angel Defence 2.0")
     @inventory = @world.getSystem "Inventory" # used to get manipulate teams' gold
 
-
   # one of the four main functions provided by CodeCombat interface
   # Before the game renders, make thangs that do not have health and is not programmable not exist in the game
   # call prepareGame() to start the game process
@@ -222,6 +222,7 @@
       @spawnNeutrals() # spawn if neutral defeated
       @spawnPotions() # spawn if potion taken
       @spawnCreeps() # spawn every 5 seconds
+      @healThangNearAngel() # units near their angel will heal
       @clearField() # clear the dead creeps
       @checkWinner() # check for the winner
 
@@ -379,6 +380,7 @@
 #################################### BUILD THANGS ############################################
 
   # build a medium health potion at the x y coordinate
+  # heals 200 health and collector says +200 health
   createPotion:(pos) ->
     @build "health-potion-medium"
     builtPotion = @performBuild()
@@ -386,6 +388,7 @@
     builtPotion.pos.x = pos.x
     builtPotion.pos.y = pos.y
     builtPotion.collectableProperties[0][0][1] = 200
+    builtPotion.collectableExclamation = "+200 Health"
     return builtPotion
 
   # every 30 second interval, spawn a potion if the previous potion was taken
@@ -590,11 +593,12 @@
     unit.currentSpeedRatio = 1
     unit.oldattack = unit.attack
     unit.attack = (target) =>
-      distance = unit.distance target
-      if distance < unit.attackRange or distance < unit.patrolChaseRange
-        unit.oldattack(target)
-      else
-        unit.patrolPoints = patrolObject["patrolPoints"]
+      if target
+        distance = unit.distance target
+        if distance < unit.attackRange or distance < unit.patrolChaseRange
+          unit.oldattack(target)
+        else
+          unit.patrolPoints = patrolObject["patrolPoints"]
 
   # function to assign a behaviour to the unit
   onUnitEvent: (unit, type, fn) ->
@@ -611,6 +615,39 @@
     if color is "red"
       return "humans"
     return "ogres"
+
+  # Units within a 10m radius of their own angel will get healed
+  # Healing not possible if the angel is destroyed
+  healThangHelper: (unit) ->
+    # Red unit near red angel
+    if unit.color is "red" and @rangel.exists == true
+      if Math.abs(@rangel.pos.x - unit.pos.x) <= 10 and Math.abs(@rangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
+        unit.health += 1
+        unit.say("+health")
+        # unit.effects = (e for e in unit.effects when e.name isnt "heal")
+        # unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
+
+    # Blue unit near blue angel
+    else if unit.color is "blue" and @bangel.exists == true
+        if Math.abs(@bangel.pos.x - unit.pos.x) <= 10 and Math.abs(@bangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
+          unit.health += 1
+          unit.say("+health")
+          # unit.effects = (e for e in unit.effects when e.name isnt "heal")
+          # unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
+
+  # Units can regenerate health if near their own angel
+  healThangNearAngel: () ->
+    time = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
+    if time % 1.0 == 0 # heal every sec
+      # Heal heroes
+      @healThangHelper(@hero)
+      @healThangHelper(@hero2)
+      # Heal spawnables
+      for spawnable in @spawnablesInGame when spawnable.exists and spawnable.health > 0
+        @healThangHelper(spawnable)
+      # Heal creeps
+      for thang in @thangsInGame when thang.exists and thang.health > 0 and thang.team != "neutral"
+        @healThangHelper(thang)
 
 #################################### USER FUNCTIONS ############################################
 
