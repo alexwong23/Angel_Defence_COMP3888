@@ -7,8 +7,8 @@
   # object contains attributes of hero and neutrals
   THANG_PARAMETERS: {
     hero: {
-      damage: 25,
-      attackCooldown: 1,
+      damage: 20,
+      attackCooldown: 1.5,
       attackRange: 5,
       health: 300,
       speed: 25,
@@ -60,7 +60,7 @@
       speed: 15
     },
     knight: {
-      damage: 3,
+      damage: 4,
       attackCooldown: 1.5,
       attackRange: 5,
       health: 150,
@@ -98,7 +98,7 @@
       damage: 5,
       attackCooldown: 4.0, # affects how fast spells are cast
       attackRange: 15,
-      health: 50,
+      health: 100,
       speed: 15,
       healingAmount: 3
     },
@@ -106,7 +106,7 @@
       damage: 8,
       attackCooldown: 4.0, # affects how fast spells are cast
       attackRange: 15,
-      health: 50,
+      health: 100,
       speed: 15,
       slowAmount: 0.75
     }
@@ -150,7 +150,7 @@
     heroStats = @THANG_PARAMETERS["hero"]
     hero.health = heroStats.health
     hero.maxHealth = heroStats.health
-    hero.damage = heroStats.damage
+    hero.attackDamage = heroStats.damage
     hero.attackCooldown = heroStats.attackCooldown
     hero.attackRange = heroStats.attackRange
     hero.speed = heroStats.speed
