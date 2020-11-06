@@ -24,7 +24,12 @@ def thiefAimArcherFunction(e):
     while True:
         archers = me.findByType("archer", me.findEnemies())
         enemy = me.findNearestEnemy()
-        if len(archers) > 0:
+        if me.health < 15:
+            if enemy and enemy.distanceTo(ownTower.pos) < 20:
+                me.attack(enemy)
+            else:
+                me.move(ownAngel.pos)
+        elif len(archers) > 0:
             me.attack(archers[0])
         elif enemy:
             me.attack(enemy)
@@ -66,5 +71,3 @@ while True:
         hero.cast("flame-armor", hero)
     elif enemy: # hero attacks nearby enemies
         hero.attack(enemy)
-    else:
-        hero.attack("Blue Angel")
