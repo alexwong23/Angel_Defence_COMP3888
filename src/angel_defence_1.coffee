@@ -201,7 +201,6 @@
           buildType = type
         else
           break
-
       # create neutral on left side (attacking red team)
       unit = @createNeutral(buildType, "green", 0)
       @redNeutral.push unit
@@ -215,16 +214,19 @@
   # deducts gold from the team
   # assigns unit a team and commander and push it to the units array
   spawnControllables: (hero, color, unitType, posNumber) ->
-
+    
     team: ""
     if color is "red"
       team = "humans"
     else
       team = "ogres"
 
-    # if the input unitType is invalid, set to default "warrior"
+    # if the input unitType is invalid, throw error
     if not unitType or not @FRIEND_UNIT[unitType]
-      unitType = "warrior"
+      throw new ArgumentError "Please specify one of the three spawnable units.", "spawn", "unitType", "spawnable", unitType
+    
+    if posNumber > 5 or posNumber < 0
+      throw new ArgumentError "Please specify one of the number from 0-5", "spawn", "unitType", "spawnable", unitType
     
     # get the full type of the unit
     fullType = "#{unitType}-#{color}"
@@ -376,7 +378,6 @@
 
   # called by spawnControllable to create units
   createUnit: (unitType, color, posNumber) ->
-    # if invalid friend unit type, set to default "archer"
     if not @FRIEND_UNIT[unitType]
       unitType = "archer"
 
