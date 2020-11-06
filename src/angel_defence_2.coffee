@@ -60,10 +60,10 @@
       speed: 15
     },
     knight: {
-      damage: 4,
+      damage: 3,
       attackCooldown: 1.5,
       attackRange: 5,
-      health: 150,
+      health: 200,
       speed: 10
     },
     thief: {
@@ -74,21 +74,21 @@
       speed: 30
     },
     archer: {
-      damage: 10,
+      damage: 7,
       attackCooldown: 1.5,
       attackRange: 15,
       health: 50,
       speed: 20
     },
     wizard: {
-      damage: 20,
-      attackCooldown: 4.0,
+      damage: 5,
+      attackCooldown: 1.5,
       attackRange: 20,
       health: 50,
       speed: 15
     },
     thrower: {
-      damage: 8,
+      damage: 7,
       attackCooldown: 1.0,
       attackRange: 10,
       health: 50,
@@ -115,7 +115,8 @@
   # float variables to determine timing
   POTION_RESPAWN: 30.0
   NEUTRAL_RESPAWN: 15.0
-  CREEP_SPAWN: 5.0
+  CREEP_SPAWN: 15.0
+  NUM_CREEPS: 3.0
   ANGEL_HEAL: 1.0
 
   # array of allowed unit events, this is used in game.setActionFor()
@@ -531,12 +532,13 @@
   spawnCreeps: () ->
     spawnTime = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
     if spawnTime % @CREEP_SPAWN == 0 # spawn potion every 5 sec
-      redCreep = @createThang("peasant", "red", 0)
-      @setUpCreep(redCreep, [{"x": 70, "y": 55}])
-      # @setUpCreep(redCreep, [{"x": 35, "y": 30}, {"x": 45, "y": 35}, {"x": 70, "y": 55}])
-      blueCreep = @createThang("peasant", "blue", 0)
-      @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
-      # @setUpCreep(blueCreep, [{"x": 46, "y": 34}, {"x": 34, "y": 31}, {"x": 12, "y": 12}])
+      for i in [0...@NUM_CREEPS]
+        redCreep = @createThang("peasant", "red", 0)
+        @setUpCreep(redCreep, [{"x": 70, "y": 55}])
+        # @setUpCreep(redCreep, [{"x": 35, "y": 30}, {"x": 45, "y": 35}, {"x": 70, "y": 55}])
+        blueCreep = @createThang("peasant", "blue", 0)
+        @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
+        # @setUpCreep(blueCreep, [{"x": 46, "y": 34}, {"x": 34, "y": 31}, {"x": 12, "y": 12}])
 
   # choose a neutral type to spawn at random
   spawnNeutralChance: () ->
