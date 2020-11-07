@@ -112,12 +112,52 @@
     }
   }
 
+  # object contains xy coordinates for potions, creeps and neutrals
+  THANG_COORDINATES: {
+    potionRight: {
+      x: 49,
+      y: 30
+    },
+    potionLeft: {
+      x: 34,
+      y: 40
+    },
+    neutralTopStart: {
+      x: 10,
+      y: 60
+    },
+    neutralTopEnd: {
+      x: 25,
+      y: 50
+    },
+    neutralBtmStart: {
+      x: 75,
+      y: 10
+    },
+    neutralBtmEnd: {
+      x: 60,
+      y: 20
+    },
+    creepRed: {
+      x: 70,
+      y: 55
+    },
+    creepBlue: {
+      x: 12,
+      y: 12
+    }
+  }
+
   # float variables to determine timing
+  POTION_HEAL: 200.0
   POTION_RESPAWN: 30.0
   NEUTRAL_RESPAWN: 15.0
   CREEP_SPAWN: 15.0
   NUM_CREEPS: 3.0
-  ANGEL_HEAL: 1.0
+  ANGEL_HEAL_TIMER: 1.0
+  ANGEL_HEAL_RANGE: 10.0
+  ANGEL_HEAL_AMOUNT: 1.0
+  CLEAR_FIELD_TIMER: 33.0
 
   # array of allowed unit events, this is used in game.setActionFor()
   ALLOWED_UNIT_EVENT_NAMES: ["spawn", "attack", "defend", "update"]
@@ -288,22 +328,22 @@
   healThangHelper: (unit) ->
     # Red unit near red angel
     if unit.color is "red" and @rangel.exists == true
-      if Math.abs(@rangel.pos.x - unit.pos.x) <= 10 and Math.abs(@rangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
-        unit.health += 1
+      if Math.abs(@rangel.pos.x - unit.pos.x) <= @ANGEL_HEAL_RANGE and Math.abs(@rangel.pos.y - unit.pos.y) <= @ANGEL_HEAL_RANGE and unit.health < unit.maxHealth and unit.health > 0
+        unit.health += @ANGEL_HEAL_AMOUNT
         unit.effects = (e for e in unit.effects when e.name isnt "heal")
         unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
 
     # Blue unit near blue angel
     else if unit.color is "blue" and @bangel.exists == true
-      if Math.abs(@bangel.pos.x - unit.pos.x) <= 10 and Math.abs(@bangel.pos.y - unit.pos.y) <= 10 and unit.health < unit.maxHealth and unit.health > 0
-        unit.health += 1
+      if Math.abs(@bangel.pos.x - unit.pos.x) <= @ANGEL_HEAL_RANGE and Math.abs(@bangel.pos.y - unit.pos.y) <= @ANGEL_HEAL_RANGE and unit.health < unit.maxHealth and unit.health > 0
+        unit.health += @ANGEL_HEAL_AMOUNT
         unit.effects = (e for e in unit.effects when e.name isnt "heal")
         unit.addEffect {name: "heal", duration: 0.5, reverts: true, setTo: true, targetProperty: "beingHealed"}
 
   # Units can regenerate health if near their own angel
   healThangNearAngel: () ->
     time = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
-    if time % @ANGEL_HEAL == 0 # heal every sec
+    if time % @ANGEL_HEAL_TIMER == 0 # heal every sec
       # Heal heroes
       @healThangHelper(@hero)
       @healThangHelper(@hero2)
@@ -317,7 +357,8 @@
   # clear the battlefield of dead creeps/neutrals when the total is a multiple of 10
   # when spawnables/creep/neutral has no health, it is considered dead and its body disappears
   clearField: ->
-    if @thangsInGame.length % 8 == 0
+    time = Math.round(@world.age * 10) / 10
+    if time % @CLEAR_FIELD_TIMER == 0
       for u in @thangsInGame when u.health <= 0
         u.setExists(false)
       for u in @spawnablesInGame when u.health <= 0
@@ -335,13 +376,38 @@
   startGame: () ->
     buildType = @spawnNeutralChance()
     @neutralTop = @createThang(buildType, "green", 0)
-    @setUpNeutral(@neutralTop, [{"x": 10, "y": 60}, {"x": 25, "y": 50}])
+    @setUpNeutral(@neutralTop, [{
+        "x": @THANG_COORDINATES["neutralTopStart"]["x"],
+        "y": @THANG_COORDINATES["neutralTopStart"]["y"]
+      }, {
+        "x": @THANG_COORDINATES["neutralTopEnd"]["x"],
+        "y": @THANG_COORDINATES["neutralTopEnd"]["y"]
+      }])
     @neutralBtm = @createThang(buildType, "green", 1)
-    @setUpNeutral(@neutralBtm, [{"x": 75, "y": 10}, {"x": 60, "y": 20}])
-    @potionRight = @createPotion({"x": 49, "y": 30})
-    @potionLeft = @createPotion({"x": 34, "y": 40})
-    @hero.maxSpeed = 20
-    @hero2.maxSpeed = 20
+    @setUpNeutral(@neutralBtm, [{
+        "x": @THANG_COORDINATES["neutralBtmStart"]["x"],
+        "y": @THANG_COORDINATES["neutralBtmStart"]["y"]
+      }, {
+        "x": @THANG_COORDINATES["neutralBtmEnd"]["x"],
+        "y": @THANG_COORDINATES["neutralBtmEnd"]["y"]
+      }])
+    @potionRight = @createPotion({
+      "x": @THANG_COORDINATES["potionRight"]["x"],
+      "y": @THANG_COORDINATES["potionRight"]["y"]})
+    @potionLeft = @createPotion({
+      "x": @THANG_COORDINATES["potionLeft"]["x"],
+      "y": @THANG_COORDINATES["potionLeft"]["y"]})
+    for i in [0...@NUM_CREEPS]
+      creepRed = @createThang("peasant", "red", 0)
+      @setUpCreep(creepRed, [{
+        "x": @THANG_COORDINATES["creepRed"]["x"],
+        "y": @THANG_COORDINATES["creepRed"]["y"]}])
+      creepBlue = @createThang("peasant", "blue", 0)
+      @setUpCreep(creepBlue, [{
+        "x": @THANG_COORDINATES["creepBlue"]["x"],
+        "y": @THANG_COORDINATES["creepBlue"]["y"]}])
+    @hero.maxSpeed = @THANG_PARAMETERS["hero"]["speed"]
+    @hero2.maxSpeed = @THANG_PARAMETERS["hero"]["speed"]
     @gameStarted = true
     @ref.setExists(false)
 
@@ -423,8 +489,8 @@
     builtPotion.team = "neutral"
     builtPotion.pos.x = pos.x
     builtPotion.pos.y = pos.y
-    builtPotion.collectableProperties[0][0][1] = 200
-    builtPotion.collectableExclamation = "+200 Health"
+    builtPotion.collectableProperties[0][0][1] = @POTION_HEAL
+    builtPotion.collectableExclamation = "+" + @POTION_HEAL + " Health"
     return builtPotion
 
   # every 30 second interval, spawn a potion if the previous potion was taken
@@ -432,9 +498,13 @@
     spawnTime = Math.round(@world.age * 10) / 10
     if spawnTime % @POTION_RESPAWN == 0 # spawn potion every 30 sec interval
       if @potionRight.exists == false
-        @potionRight = @createPotion({"x": 49, "y": 30})
+        @potionRight = @createPotion({
+          "x": @THANG_COORDINATES["potionRight"]["x"],
+          "y": @THANG_COORDINATES["potionRight"]["y"]})
       if @potionLeft.exists == false
-        @potionLeft = @createPotion({"x": 34, "y": 40})
+        @potionLeft = @createPotion({
+          "x": @THANG_COORDINATES["potionLeft"]["x"],
+          "y": @THANG_COORDINATES["potionLeft"]["y"]})
 
   # changes warlock attack property, includes a slow on target unit
   setUpWarlockSlow: (warlock, slowAmount) ->
@@ -533,12 +603,16 @@
     spawnTime = Math.round(@world.age * 10) / 10 # round world.age to one decimal place
     if spawnTime % @CREEP_SPAWN == 0 # spawn potion every 5 sec
       for i in [0...@NUM_CREEPS]
-        redCreep = @createThang("peasant", "red", 0)
-        @setUpCreep(redCreep, [{"x": 70, "y": 55}])
-        # @setUpCreep(redCreep, [{"x": 35, "y": 30}, {"x": 45, "y": 35}, {"x": 70, "y": 55}])
-        blueCreep = @createThang("peasant", "blue", 0)
-        @setUpCreep(blueCreep, [{"x": 12, "y": 12}])
-        # @setUpCreep(blueCreep, [{"x": 46, "y": 34}, {"x": 34, "y": 31}, {"x": 12, "y": 12}])
+        creepRed = @createThang("peasant", "red", 0)
+        @setUpCreep(creepRed, [{
+          "x": @THANG_COORDINATES["creepRed"]["x"],
+          "y": @THANG_COORDINATES["creepRed"]["y"]}])
+        # @setUpCreep(creepRed, [{"x": 35, "y": 30}, {"x": 45, "y": 35}, {"x": 70, "y": 55}])
+        creepBlue = @createThang("peasant", "blue", 0)
+        @setUpCreep(creepBlue, [{
+          "x": @THANG_COORDINATES["creepBlue"]["x"],
+          "y": @THANG_COORDINATES["creepBlue"]["y"]}])
+        # @setUpCreep(creepBlue, [{"x": 46, "y": 34}, {"x": 34, "y": 31}, {"x": 12, "y": 12}])
 
   # choose a neutral type to spawn at random
   spawnNeutralChance: () ->
@@ -568,10 +642,22 @@
       buildType = @spawnNeutralChance()
       if @neutralTop.health < 1
         @neutralTop = @createThang(buildType, "green", 0)
-        @setUpNeutral(@neutralTop, [{"x": 10, "y": 60}, {"x": 25, "y": 50}])
+        @setUpNeutral(@neutralTop, [{
+            "x": @THANG_COORDINATES["neutralTopStart"]["x"],
+            "y": @THANG_COORDINATES["neutralTopStart"]["y"]
+          }, {
+            "x": @THANG_COORDINATES["neutralTopEnd"]["x"],
+            "y": @THANG_COORDINATES["neutralTopEnd"]["y"]
+          }])
       if @neutralBtm.health < 1
         @neutralBtm = @createThang(buildType, "green", 1)
-        @setUpNeutral(@neutralBtm, [{"x": 75, "y": 10}, {"x": 60, "y": 20}])
+        @setUpNeutral(@neutralBtm, [{
+            "x": @THANG_COORDINATES["neutralBtmStart"]["x"],
+            "y": @THANG_COORDINATES["neutralBtmStart"]["y"]
+          }, {
+            "x": @THANG_COORDINATES["neutralBtmEnd"]["x"],
+            "y": @THANG_COORDINATES["neutralBtmEnd"]["y"]
+          }])
 
   # create a creep or unit at the position
   # unit has to be listed in the referee existence builds component
