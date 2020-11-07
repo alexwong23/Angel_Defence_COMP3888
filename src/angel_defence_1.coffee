@@ -1,5 +1,8 @@
 {ArgumentError} = require "lib/world/errors"
 
+# ANGEL DEFENCE 1 REFEREE CODE
+
+#################################### PARAMETERS ############################################
 {
   # available units for users
   FRIEND_UNIT: {
@@ -91,6 +94,28 @@
   # power rate of powering up waves
   POWER_RATE: 0.2
   
+  
+#################################### SET UP GAME ############################################
+
+  # set up functions player can use in the game
+  setupGlobal: (hero, color) ->
+
+    # available methods for users
+    game = {
+      randInt: @world.rand.rand2,
+      log: console.log,
+      spawn: @spawnControllables.bind(@, hero, color),
+      gold: @getGold.bind(@, hero, color),
+      costOf: @getCostOf.bind(@, hero, color)
+      levelUpAllies: @powerWaves.bind(@, hero, color)
+      }
+
+    aether = @world.userCodeMap[hero.id]?.plan
+    esperEngine = aether?.esperEngine
+    if esperEngine
+      esperEngine.options.foreignObjectMode = 'smart'
+      esperEngine.options.bookmarkInvocationMode = "loop"
+      esperEngine.addGlobal?('game', game)
 
   # initialize and set up the postion for spawning on both sides
   # get spawn positions by id and append of them to a list
@@ -126,304 +151,6 @@
       th.alpha = 0.5
       th.keepTrackedProperty("alpha")
       @spawnPositionCounters[th.id] = 0
-
-  # Set up the netural including its type, status, color, patrol points
-  # Position: 0 for red team, 1 for blue team
-  setUpNeutral: (unit, unitType, color, posNumber) ->
-      params = @ENEMY_UNIT[unitType]
-      unit.maxHealth = params.health
-      unit.health = params.health
-      unit.keepTrackedProperty("maxHealth")
-      unit.keepTrackedProperty("health")
-      unit.attackDamage = params.damage
-      unit.keepTrackedProperty("attackDamage")
-      unit.attackRange = params.attackRange
-      unit.keepTrackedProperty("attackRange")
-      unit.maxSpeed = params.speed
-      unit.keepTrackedProperty("maxSpeed")
-      unit.patrolChaseRange = @NEUTRAL_CHASE_RANGE
-      
-      # The health and speed of newly spawned units increase by time
-      unit.maxHealth += @world.age * @HEALTH_INCREASE_RATE
-      unit.health += @world.age * @HEALTH_INCREASE_RATE
-      unit.maxSpeed += @world.age * @SPEED_INCREASE_RATE
-      
-      if posNumber is 0
-        # Patrol path for neutral enemies on the left side
-        unit.patrolPoints = ([{"x": 32, "y": 55},
-                              {"x": 32, "y": 40},
-                              {"x": 12, "y": 40},
-                              {"x": 12, "y": 25},
-                              {"x": 30, "y": 25},
-                              {"x": 30, "y": 10},
-                              {"x": 15, "y": 10}])
-      else
-        # Patrol path for neutral enemies on the right side
-        unit.patrolPoints = ([{"x": 48, "y": 55},
-                              {"x": 48, "y": 40},
-                              {"x": 68, "y": 40},
-                              {"x": 68, "y": 25},
-                              {"x": 50, "y": 25},
-                              {"x": 50, "y": 10},
-                              {"x": 65, "y": 10}])
-      if unit.actions.attack?.cooldown
-        unit.actions.attack.cooldown = params.attackCooldown
-      unit.type = unitType
-      unit.color = color
-
-  # create a neutral at certain spawn position
-  # neutral has to be listed in the referee existence builds component
-  createNeutral: (unitType, color, posNumber) ->
-
-      # if invalid unit type, set to default fmunchkin
-      if not @ENEMY_UNIT[unitType]
-        unitType = "fmunchkin"
-
-      # get the full type information
-      fullType = "#{unitType}-#{color}"
-      
-      # get the position of spawn position
-      pos = @getPosXY(color, posNumber)
-      unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y)
-      
-      @setUpNeutral(unit, unitType, color, posNumber)
-
-      return unit
-
-  # spawn netural types randomly
-  spawnNeutrals: () ->
-    for i in [0...@NEUTRAL_SPAWN_NUM]
-      spawnChances = [
-        [0, 'fmunchkin']
-        [50, 'mmunchkin']
-        [85, 'brawler']
-        [99, 'headhunter']
-      ]
-      r = @world.rand.randf() * 100
-      for [spawnChance, type] in spawnChances
-        if r >= spawnChance
-          buildType = type
-        else
-          break
-      # create neutral on left side (attacking red team)
-      unit = @createNeutral(buildType, "green", 0)
-      @redNeutral.push unit
-
-      # create neutral on left side (attacking blue team)
-      unit = @createNeutral(buildType, "green", 1)
-      @blueNeutral.push unit
-    
-    #update wave counters
-    @waveCtr+=1
-    #increase the spawned netural number by 1 every 2 waves
-    if @waveCtr%2==0
-      @NEUTRAL_SPAWN_NUM+=1
-
-
-  # allows users to spawn a unit on the command game.spawn(unitType, posNumber) when the game starts
-  # deducts gold from the team
-  # assigns unit a team and commander and push it to the units array
-  spawnControllables: (hero, color, unitType, posNumber) ->
-    
-    team: ""
-    if color is "red"
-      team = "humans"
-    else
-      team = "ogres"
-
-    # if the input unitType is invalid, throw error
-    if not unitType or not @FRIEND_UNIT[unitType]
-      throw new ArgumentError "Please specify one of the three spawnable units.", "spawn", "unitType", "spawnable", unitType
-    
-    if posNumber > 5 or posNumber < 0
-      throw new ArgumentError "Please specify one of the number from 0-5", "spawn", "unitType", "spawnable", unitType
-    
-    # get the full type of the unit
-    fullType = "#{unitType}-#{color}"
-    rectID = "pos-#{color}-#{posNumber}"
-
-    # Check if user has enough money to spawn units
-    if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost and @spawnPositionCounters[rectID] < @MAX_UNITS_PER_CELL
-      
-      unit = @createUnit(unitType, color, posNumber)
-      @spawnPositionCounters[rectID] += 1
-      # subtract cost from user's team
-      @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
-      unit.startsPeaceful = false
-      unit.commander = null
-
-      @gameStates[color].myUnitType.push(unitType)
-      @gameStates[color].myPositions.push(posNumber)
-  # Allow user to get how much gold he has when calling the method
-  getGold: (hero,color)->
-    if color is 'red'
-      return @inventory.goldForTeam('humans')
-    else
-      return @inventory.goldForTeam('ogres') 
-  
-  # Allow user to get the cost of spawning certain type of unit
-  getCostOf:(hero,color,unitType)->
-    fullType = "#{unitType}-#{color}"
-    return @buildables[fullType].goldCost
-  
-  # Allow user to power up waves using gold, units will be powered according to the amount of gold consumed
-  powerWaves:(hero,color,cost)->
-    if color is 'red'
-      team = 'humans'
-      if @inventory.goldForTeam(team) >= cost
-        @RED_POWERED_WAVES_FLAG = 1
-        @POWER_COST = cost
-        @inventory.subtractGoldForTeam team,cost
-    else
-      team = 'ogres'
-      if @inventory.goldForTeam(team) >= cost
-        @BLUE_POWERED_WAVES_FLAG = 1
-        @POWER_COST = cost
-        @inventory.subtractGoldForTeam team,cost
-
-  # set up functions player can use in the game
-  setupGlobal: (hero, color) ->
-
-    # available methods for users
-    game = {
-      randInt: @world.rand.rand2,
-      log: console.log,
-      spawn: @spawnControllables.bind(@, hero, color),
-      gold: @getGold.bind(@, hero, color),
-      costOf: @getCostOf.bind(@, hero, color)
-      levelUpAllies: @powerWaves.bind(@, hero, color)
-      }
-
-    aether = @world.userCodeMap[hero.id]?.plan
-    esperEngine = aether?.esperEngine
-    if esperEngine
-      esperEngine.options.foreignObjectMode = 'smart'
-      esperEngine.options.bookmarkInvocationMode = "loop"
-      esperEngine.addGlobal?('game', game)
-
-  # make spawn positions(rectangles) invisible to users
-  invisibleSpawnPos:()->
-    for s in @spawnPositions
-      s.alpha = 0
-      s.clearSpeech()
-      s.keepTrackedProperty("alpha")
-
-  # start the game
-  setGameStart:()->
-    @gameStart = true
-
-  # Check the death of enemies
-  checkDeath: () ->
-    # Check if red team has killed an enemy (neutral)
-    for unit in @redNeutral
-      # if the unit is dead
-      if unit.health <= 0
-        # add gold for humans (red) team if this neutral enemy has been killed
-        @inventory.addGoldForTeam "humans", @ENEMY_BOUNTY, false
-        @redNeutral = (x for x in @redNeutral when x != unit)
-
-    # Check if blue team has killed an enemy (neutral)
-    for unit in @blueNeutral
-      # if the unit is dead
-      if unit.health <= 0
-        # add gold for ogres (blue) team if this neutral enemy has been killed
-        @inventory.addGoldForTeam "ogres", @ENEMY_BOUNTY, false
-        @blueNeutral = (x for x in @blueNeutral when x != unit)
-  
-  # Update waves damage if user has called powerUpWaves()
-  updateWaves: () ->
-    # Check if user has called powerUpWaves()
-    if @RED_POWERED_WAVES_FLAG == 1
-      # power up spawned units in red team
-      for unit in @redUnits
-        unit.attackDamage += @POWER_COST * @POWER_RATE
-        unit.say("I am stronger!")
-      @RED_POWERED_WAVES_FLAG = 0
-    if @BLUE_POWERED_WAVES_FLAG == 1 
-      # power up spwaned units in blue team
-      for unit in @blueUnits
-        unit.attackDamage += @POWER_COST * @POWER_RATE
-        unit.say("I am stronger!")
-      @BLUE_POWERED_WAVES_FLAG = 0
-      
-  
-  # Set up the netural including its type, status, color, actions, commander
-  setupUnit: (unit, unitType, color) ->
-    params = @FRIEND_UNIT[unitType]
-    unit.maxHealth = params.health
-    unit.health = params.health
-    unit.keepTrackedProperty("maxHealth")
-    unit.keepTrackedProperty("health")
-    unit.attackDamage = params.damage
-    unit.keepTrackedProperty("attackDamage")
-    unit.attackRange = params.attackRange
-    unit.keepTrackedProperty("attackRange")
-    unit.maxSpeed = params.speed
-    unit.keepTrackedProperty("maxSpeed")
-    unit.startsPeaceful = false
-    unit.commander = null
-    unit.isAttackable = false
-    if unit.actions.attack?.cooldown
-      unit.actions.attack.cooldown = params.attackCooldown
-    unit.type = unitType
-    unit.color = color
-
-    # activate units' actions
-    fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
-    if fn and _.isFunction(fn)
-      # red team controlled by hero placeholder
-      if unit.color is "red"
-        unit.commander = @hero
-      # blue team controlled by hero placeholder 1
-      if unit.color is "blue"
-        unit.commander = @hero2
-      unit.didTriggerSpawnEvent = true
-      unit.on("spawn", fn)
-  
-  # get the xy coordinates of the spawn position
-  getPosXY: (color, n) ->
-    rectID = "pos-#{color}-#{n}"
-    rect = @world.getThangByID(rectID)
-    return rect.pos.copy()
-
-  # called by spawnControllable to create units
-  createUnit: (unitType, color, posNumber) ->
-    if not @FRIEND_UNIT[unitType]
-      unitType = "archer"
-
-    # spawn position
-    rectID = "pos-#{color}-#{posNumber}"
-    
-    pos = @getPosXY(color, posNumber)
-    fullType = "#{unitType}-#{color}"
-    @unitCounter[fullType] ?= 0
-    @buildables[fullType].ids = ["#{fullType}-#{@unitCounter[fullType]}"]
-    @unitCounter[fullType]++
-    
-    x=pos.x+@world.rand.rand2 -3, 3
-    y=pos.y+@world.rand.rand2 -3, 3
-    
-    
-    unit = @instabuild("#{unitType}-#{color}", x, y, "#{unitType}-#{color}")
-    @setupUnit(unit, unitType, color)
-    
-    if color is 'red' and unit not in @redUnits
-      @redUnits.push unit
-    else if color is 'blue' and unit not in @blueUnits
-      @blueUnits.push unit
-      
-    return unit
-
-  # spawn units on first frame based on the information from user input stored in gameStates
-  checkSpawn:(color) ->
-    i = 0
-    while i < @gameStates[color].myUnitType.length
-      unitType = @gameStates[color].myUnitType[i]
-      unitPos = @gameStates[color].myPositions[i]
-      unit = @createUnit(unitType, color, unitPos)
-      
-      i++
-        
 
   # Setting of the level
   # Setting up Thangs information
@@ -534,6 +261,299 @@
       @hero.keepTrackedProperty("health")
       @hero2.health = @bangel.health
       @hero2.keepTrackedProperty("health")
+  
+#################################### BUILD THANGS ############################################
+
+  # Set up the netural including its type, status, color, patrol points
+  # Position: 0 for red team, 1 for blue team
+  setUpNeutral: (unit, unitType, color, posNumber) ->
+      params = @ENEMY_UNIT[unitType]
+      unit.maxHealth = params.health
+      unit.health = params.health
+      unit.keepTrackedProperty("maxHealth")
+      unit.keepTrackedProperty("health")
+      unit.attackDamage = params.damage
+      unit.keepTrackedProperty("attackDamage")
+      unit.attackRange = params.attackRange
+      unit.keepTrackedProperty("attackRange")
+      unit.maxSpeed = params.speed
+      unit.keepTrackedProperty("maxSpeed")
+      unit.patrolChaseRange = @NEUTRAL_CHASE_RANGE
+      
+      # The health and speed of newly spawned units increase by time
+      unit.maxHealth += @world.age * @HEALTH_INCREASE_RATE
+      unit.health += @world.age * @HEALTH_INCREASE_RATE
+      unit.maxSpeed += @world.age * @SPEED_INCREASE_RATE
+      
+      if posNumber is 0
+        # Patrol path for neutral enemies on the left side
+        unit.patrolPoints = ([{"x": 32, "y": 55},
+                              {"x": 32, "y": 40},
+                              {"x": 12, "y": 40},
+                              {"x": 12, "y": 25},
+                              {"x": 30, "y": 25},
+                              {"x": 30, "y": 10},
+                              {"x": 15, "y": 10}])
+      else
+        # Patrol path for neutral enemies on the right side
+        unit.patrolPoints = ([{"x": 48, "y": 55},
+                              {"x": 48, "y": 40},
+                              {"x": 68, "y": 40},
+                              {"x": 68, "y": 25},
+                              {"x": 50, "y": 25},
+                              {"x": 50, "y": 10},
+                              {"x": 65, "y": 10}])
+      if unit.actions.attack?.cooldown
+        unit.actions.attack.cooldown = params.attackCooldown
+      unit.type = unitType
+      unit.color = color
+
+  # create a neutral at certain spawn position
+  # neutral has to be listed in the referee existence builds component
+  createNeutral: (unitType, color, posNumber) ->
+
+      # if invalid unit type, set to default fmunchkin
+      if not @ENEMY_UNIT[unitType]
+        unitType = "fmunchkin"
+
+      # get the full type information
+      fullType = "#{unitType}-#{color}"
+      
+      # get the position of spawn position
+      pos = @getPosXY(color, posNumber)
+      unit = @instabuild("#{unitType}-#{color}", pos.x, pos.y)
+      
+      @setUpNeutral(unit, unitType, color, posNumber)
+
+      return unit
+
+  # spawn netural types randomly
+  spawnNeutrals: () ->
+    for i in [0...@NEUTRAL_SPAWN_NUM]
+      spawnChances = [
+        [0, 'fmunchkin']
+        [50, 'mmunchkin']
+        [85, 'brawler']
+        [99, 'headhunter']
+      ]
+      r = @world.rand.randf() * 100
+      for [spawnChance, type] in spawnChances
+        if r >= spawnChance
+          buildType = type
+        else
+          break
+      # create neutral on left side (attacking red team)
+      unit = @createNeutral(buildType, "green", 0)
+      @redNeutral.push unit
+
+      # create neutral on left side (attacking blue team)
+      unit = @createNeutral(buildType, "green", 1)
+      @blueNeutral.push unit
+    
+    #update wave counters
+    @waveCtr+=1
+    #increase the spawned netural number by 1 every 2 waves
+    if @waveCtr%2==0
+      @NEUTRAL_SPAWN_NUM+=1
+
+  # Set up the netural including its type, status, color, actions, commander
+  setupUnit: (unit, unitType, color) ->
+    params = @FRIEND_UNIT[unitType]
+    unit.maxHealth = params.health
+    unit.health = params.health
+    unit.keepTrackedProperty("maxHealth")
+    unit.keepTrackedProperty("health")
+    unit.attackDamage = params.damage
+    unit.keepTrackedProperty("attackDamage")
+    unit.attackRange = params.attackRange
+    unit.keepTrackedProperty("attackRange")
+    unit.maxSpeed = params.speed
+    unit.keepTrackedProperty("maxSpeed")
+    unit.startsPeaceful = false
+    unit.commander = null
+    unit.isAttackable = false
+    if unit.actions.attack?.cooldown
+      unit.actions.attack.cooldown = params.attackCooldown
+    unit.type = unitType
+    unit.color = color
+
+    # activate units' actions
+    fn = @actionHelpers[unit.color]?[unit.type]?["spawn"]
+    if fn and _.isFunction(fn)
+      # red team controlled by hero placeholder
+      if unit.color is "red"
+        unit.commander = @hero
+      # blue team controlled by hero placeholder 1
+      if unit.color is "blue"
+        unit.commander = @hero2
+      unit.didTriggerSpawnEvent = true
+      unit.on("spawn", fn)
+
+  # called by spawnControllable to create units
+  createUnit: (unitType, color, posNumber) ->
+    if not @FRIEND_UNIT[unitType]
+      unitType = "archer"
+
+    # spawn position
+    rectID = "pos-#{color}-#{posNumber}"
+    
+    pos = @getPosXY(color, posNumber)
+    fullType = "#{unitType}-#{color}"
+    @unitCounter[fullType] ?= 0
+    @buildables[fullType].ids = ["#{fullType}-#{@unitCounter[fullType]}"]
+    @unitCounter[fullType]++
+    
+    x=pos.x+@world.rand.rand2 -3, 3
+    y=pos.y+@world.rand.rand2 -3, 3
+    
+    
+    unit = @instabuild("#{unitType}-#{color}", x, y, "#{unitType}-#{color}")
+    @setupUnit(unit, unitType, color)
+    
+    if color is 'red' and unit not in @redUnits
+      @redUnits.push unit
+    else if color is 'blue' and unit not in @blueUnits
+      @blueUnits.push unit
+      
+    return unit
+
+####################################  HELPER FUNCTIONS ########################################
+  # Allow user to get how much gold he has when calling the method
+  getGold: (hero,color)->
+    if color is 'red'
+      return @inventory.goldForTeam('humans')
+    else
+      return @inventory.goldForTeam('ogres') 
+      
+  # make spawn positions(rectangles) invisible to users
+  invisibleSpawnPos:()->
+    for s in @spawnPositions
+      s.alpha = 0
+      s.clearSpeech()
+      s.keepTrackedProperty("alpha")
+
+  # start the game
+  setGameStart:()->
+    @gameStart = true
+
+  # Check the death of enemies
+  checkDeath: () ->
+    # Check if red team has killed an enemy (neutral)
+    for unit in @redNeutral
+      # if the unit is dead
+      if unit.health <= 0
+        # add gold for humans (red) team if this neutral enemy has been killed
+        @inventory.addGoldForTeam "humans", @ENEMY_BOUNTY, false
+        @redNeutral = (x for x in @redNeutral when x != unit)
+
+    # Check if blue team has killed an enemy (neutral)
+    for unit in @blueNeutral
+      # if the unit is dead
+      if unit.health <= 0
+        # add gold for ogres (blue) team if this neutral enemy has been killed
+        @inventory.addGoldForTeam "ogres", @ENEMY_BOUNTY, false
+        @blueNeutral = (x for x in @blueNeutral when x != unit)
+        
+        
+  # get the xy coordinates of the spawn position
+  getPosXY: (color, n) ->
+    rectID = "pos-#{color}-#{n}"
+    rect = @world.getThangByID(rectID)
+    return rect.pos.copy()
+
+  
+
+  # spawn units on first frame based on the information from user input stored in gameStates
+  checkSpawn:(color) ->
+    i = 0
+    while i < @gameStates[color].myUnitType.length
+      unitType = @gameStates[color].myUnitType[i]
+      unitPos = @gameStates[color].myPositions[i]
+      unit = @createUnit(unitType, color, unitPos)
+      
+      i++
+
+
+#################################### USER FUNCTIONS ############################################
+
+
+  # allows users to spawn a unit on the command game.spawn(unitType, posNumber) when the game starts
+  # deducts gold from the team
+  # assigns unit a team and commander and push it to the units array
+  spawnControllables: (hero, color, unitType, posNumber) ->
+    
+    team: ""
+    if color is "red"
+      team = "humans"
+    else
+      team = "ogres"
+
+    # if the input unitType is invalid, throw error
+    if not unitType or not @FRIEND_UNIT[unitType]
+      throw new ArgumentError "Please specify one of the three spawnable units.", "spawn", "unitType", "spawnable", unitType
+    
+    if posNumber > 5 or posNumber < 0
+      throw new ArgumentError "Please specify one of the number from 0-5", "spawn", "unitType", "spawnable", unitType
+    
+    # get the full type of the unit
+    fullType = "#{unitType}-#{color}"
+    rectID = "pos-#{color}-#{posNumber}"
+
+    # Check if user has enough money to spawn units
+    if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost and @spawnPositionCounters[rectID] < @MAX_UNITS_PER_CELL
+      
+      unit = @createUnit(unitType, color, posNumber)
+      @spawnPositionCounters[rectID] += 1
+      # subtract cost from user's team
+      @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
+      unit.startsPeaceful = false
+      unit.commander = null
+
+      @gameStates[color].myUnitType.push(unitType)
+      @gameStates[color].myPositions.push(posNumber)
+      
+ 
+  
+  # Allow user to get the cost of spawning certain type of unit
+  getCostOf:(hero,color,unitType)->
+    fullType = "#{unitType}-#{color}"
+    return @buildables[fullType].goldCost
+  
+  # Allow user to power up waves using gold, units will be powered according to the amount of gold consumed
+  powerWaves:(hero,color,cost)->
+    if color is 'red'
+      team = 'humans'
+      if @inventory.goldForTeam(team) >= cost
+        @RED_POWERED_WAVES_FLAG = 1
+        @POWER_COST = cost
+        @inventory.subtractGoldForTeam team,cost
+    else
+      team = 'ogres'
+      if @inventory.goldForTeam(team) >= cost
+        @BLUE_POWERED_WAVES_FLAG = 1
+        @POWER_COST = cost
+        @inventory.subtractGoldForTeam team,cost
+    
+
+
+  
+  
+  # Update waves damage if user has called powerUpWaves()
+  updateWaves: () ->
+    # Check if user has called powerUpWaves()
+    if @RED_POWERED_WAVES_FLAG == 1
+      # power up spawned units in red team
+      for unit in @redUnits
+        unit.attackDamage += @POWER_COST * @POWER_RATE
+        unit.say("I am stronger!")
+      @RED_POWERED_WAVES_FLAG = 0
+    if @BLUE_POWERED_WAVES_FLAG == 1 
+      # power up spwaned units in blue team
+      for unit in @blueUnits
+        unit.attackDamage += @POWER_COST * @POWER_RATE
+        unit.say("I am stronger!")
+      @BLUE_POWERED_WAVES_FLAG = 0
+      
 
 }
 
