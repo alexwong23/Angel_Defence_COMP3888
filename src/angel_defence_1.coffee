@@ -1,3 +1,5 @@
+{ArgumentError} = require "lib/world/errors"
+
 {
   # available units for users
   FRIEND_UNIT: {
