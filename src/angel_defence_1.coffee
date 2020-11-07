@@ -78,7 +78,9 @@
   # speed increase rate for every second
   SPEED_INCREASE_RATE: 2.5
   # neutral (enemy) spawn speed rate
-  NEUTRAL_SPAWN_RATE: 2
+  NEUTRAL_SPAWN_RATE: 10
+  # neutral (enemy) spawn number per wave
+  NEUTRAL_SPAWN_NUM: 3
   # netural patrol chase range
   NEUTRAL_CHASE_RANGE: 5
   # flag to record if user have powered up waves: 0 for no, 1 for yes
@@ -190,7 +192,7 @@
 
   # spawn netural types randomly
   spawnNeutrals: () ->
-    if (@world.age % @NEUTRAL_SPAWN_RATE)==0
+    for i in [0...@NEUTRAL_SPAWN_NUM]
       spawnChances = [
         [0, 'fmunchkin']
         [50, 'mmunchkin']
@@ -210,6 +212,12 @@
       # create neutral on left side (attacking blue team)
       unit = @createNeutral(buildType, "green", 1)
       @blueNeutral.push unit
+    
+    #update wave counters
+    @waveCtr+=1
+    #increase the spawned netural number by 1 every 2 waves
+    if @waveCtr%2==0
+      @NEUTRAL_SPAWN_NUM+=1
 
 
   # allows users to spawn a unit on the command game.spawn(unitType, posNumber) when the game starts
@@ -431,7 +439,7 @@
       "red": {}
       "blue": {}
     }
-    try
+    #try
     @setSpawnPositions()
     @unitCounter = {}
     @setupGlobal(@hero, "red")
@@ -440,6 +448,7 @@
     @hero.isAttackable = false
     @hero2.isAttackable = false
     @inventory = @world.getSystem 'Inventory'
+    @waveCtr = 0
     @redNeutral = []
     @blueNeutral = []
     @redUnits = []
@@ -485,6 +494,7 @@
     #clear spawn position
     @setTimeout(@invisibleSpawnPos.bind(@), @TIME_OUT_SEC)
     @setTimeout(@setGameStart.bind(@), @TIME_OUT_SEC)
+    @spawnNeutrals()
   
   # check for a winner in the allocated game time
   # break ties by comparing: angel health > total team gold
@@ -513,7 +523,8 @@
   # happens for every frame
   chooseAction: ->
     if @gameStart
-      @spawnNeutrals()
+      if (@world.age % @NEUTRAL_SPAWN_RATE)==0
+        @spawnNeutrals()
       @updateWaves()
       @checkDeath()
       @checkWinner()
@@ -525,3 +536,4 @@
       @hero2.keepTrackedProperty("health")
 
 }
+
