@@ -45,7 +45,7 @@ Click the [link](https://direct.codecombat.com/play/level/angel-defence-2)
         In this arena, you are allowed to spawn 9 types of allies:
             "warrior", "knight", "thief",
             "archer", "wizard", "thrower",
-            "buffer", "warlock", "peasant"
+            "buffer", "warlock"
 
         You have 50 gold at the beginning of the game.
         Spawn allies using your gold!
@@ -55,10 +55,13 @@ Click the [link](https://direct.codecombat.com/play/level/angel-defence-2)
         - game.spawn() to spawn a unit
         - game.setActionFor() to assign the unitType a behaviour
 
-        Additional Methods to use:
-        - game.setActionForUnit() to assign one unit a behaviour
+        Additional Methods:
+        - game.spawnArray() to spawn multiple units at a discount
         - game.changeActionFor() to change behaviour of the unitType
-        - game.changeActionForUnit() to change behaviour of one unit
+        - game.changeActionForUnit() to assign the unit a behaviour
+        - game.removeActionForUnit() to remove behaviour from the unit
+        - game.setPatrolFor() to assign a patrol to the unitType
+        - game.changePatrolFor() to change the patrol for the unitType
 
 # How to access the source code (works for both arenas)
 

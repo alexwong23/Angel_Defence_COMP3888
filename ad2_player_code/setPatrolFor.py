@@ -11,8 +11,7 @@
 # TAKE NOTE: Detailed examples of these methods can be found in the documentation. GLHF! :)
 
 # A. SET UNIT BEHAVIOURS HERE
-# thiefs attack the nearest enemy
-
+# unit attacks the nearest enemy
 def knightSpawnFunction(e):
     me = e.target
     while True:

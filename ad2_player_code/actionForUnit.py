@@ -1,14 +1,14 @@
 # Objective: Defeat the enemy Angel
-# How to play: Overwhelm the enemy using different techniques
-# 1. Use your hero and the potions wisely TIP: hero.health
-# 2. Spawn units and command them to aid you in battle
-# 3. Make good use of the creeps spawned at the Angel
-# TAKE NOTE: You cannot command the creeps. GLHF! :)
-
-AVAILABLE = [
-    "warrior", "knight", "thief",
-    "archer", "wizard", "thrower",
-    "buffer", "warlock"]
+# Tips to build the best code
+# 1. Click on the Hints Button at the top right to find out more
+# 2. Use your hero and the potions wisely using method `hero.health`
+# 3. Creeps (peasants) cannot be controlled and drop gold
+# 4. Use gold to spawn additional units using methods `game.spawn()` or `game.spawnArray()`
+# 5. Command these units using method `game.setActionFor`
+# 6. Change their behaviours in-game using method `game.changeActionFor`
+# 7. You need your hero to spawn additional units so keep him safe!
+# 8. Finally, submit your code to the ladder by clicking 'Rank My Game'
+# TAKE NOTE: Detailed examples of these methods can be found in the documentation. GLHF! :)
 
 def knightSpawnFunction(e):
     me = e.target
