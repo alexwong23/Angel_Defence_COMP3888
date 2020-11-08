@@ -148,7 +148,7 @@
     }
   }
 
-  # float variables to determine timing
+  # float variables to determine timing (time in seconds)
   POTION_HEAL: 200.0
   POTION_RESPAWN: 30.0
   NEUTRAL_RESPAWN: 15.0
