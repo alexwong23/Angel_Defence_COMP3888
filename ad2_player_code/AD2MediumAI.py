@@ -17,7 +17,7 @@ def warriorSpawnFunction(e):
     while True:
         enemy = me.findNearestEnemy()
         if enemy:
-            me.attack(enemy)
+                me.attack(enemy)
 
 # B. SET UNIT ACTIONS HERE
 # all warrior units will behave as instructed in the function 'warriorSpawnFunction'
