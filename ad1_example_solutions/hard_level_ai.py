@@ -29,7 +29,7 @@ warriorCtr = 2
 
 #initila the spawn position of units which will be spawned in while loop
 archerSpawnPos = 0
-warriorSpawnPos = 0
+warriorSpawnPos = 4
 
 while True:
     if unitNum >= TOTAL_SPAWN_NUMBER:
