@@ -5,7 +5,11 @@ def archerSpawnFunction(e):
     while True:
         enemy = me.findNearestEnemy()
         if enemy:
-            me.attack(enemy)
+            distance = me.distanceTo(enemy)
+            if distance <10 :
+                me.move(ownAngel.pos)
+            else:
+                me.attack(enemy)
 
 # B. SET UNIT ACTIONS HERE
 # all warrior units will behave as instructed in the function 'warriorSpawnFunction'
