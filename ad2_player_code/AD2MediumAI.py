@@ -16,11 +16,10 @@ def warriorSpawnFunction(e):
     me = e.target
     while True:
         enemy = me.findNearestEnemy()
-        if enemy:
-            distance = me.distanceTo(enemy)
-            if distance <10 :
-                me.move(ownAngel.pos)
-            else:
+        if me.health < 100:
+            me.move(ownAngel.pos)
+        else:
+            if enemy:
                 me.attack(enemy)
 
 # B. SET UNIT ACTIONS HERE
