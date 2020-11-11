@@ -181,6 +181,7 @@
       spawnArray: @spawnArray.bind(@, hero, color),
       costOfSpawnArray: @costOfSpawnArray.bind(@, hero, color)
       }
+    # template code that is compulsory for any CodeCombat arena
     aether = @world.userCodeMap[hero.id]?.plan
     esperEngine = aether?.esperEngine
     if esperEngine
@@ -238,9 +239,9 @@
     @inventory = @world.getSystem "Inventory" # used to get manipulate teams' gold
 
   # one of the four main functions provided by CodeCombat interface
-  # Before the game renders, make thangs that do not have health and is not programmable not exist in the game
   # call prepareGame() to start the game process
   onFirstFrame: ->
+    # Before the game renders, make the predefined thangs outside the map not exist in the game
     for th in @world.thangs when th.health? and not th.isProgrammable
       th.setExists(false)
 
