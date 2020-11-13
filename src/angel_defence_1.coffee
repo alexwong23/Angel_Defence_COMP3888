@@ -5,6 +5,7 @@
 #################################### PARAMETERS ############################################
 {
   # available units for users
+  # health is not relevant
   FRIEND_UNIT: {
     warrior: {
       health: 40,
@@ -100,7 +101,7 @@
   # set up functions player can use in the game
   setupGlobal: (hero, color) ->
 
-    # available methods for users
+    # setting up of available methods for users
     game = {
       randInt: @world.rand.rand2,
       log: console.log,
@@ -110,6 +111,7 @@
       levelUpAllies: @powerWaves.bind(@, hero, color)
       }
 
+    # From the Battle of Red Cliff template, required by the game to run
     aether = @world.userCodeMap[hero.id]?.plan
     esperEngine = aether?.esperEngine
     if esperEngine
@@ -224,28 +226,52 @@
     @spawnNeutrals()
   
   # check for a winner in the allocated game time
-  # break ties by comparing: angel health > total team gold
+  # break ties by comparing: angel health -> total team gold -> team gold available for use
   checkWinner: () ->
-    return if not @gameStarted
+    return if not @gameStart
     @existence = @world.getSystem 'Existence'
 
-    if @rangel.health <= 0
-      @world.setGoalState "defeat-red-angel", "success"
-    else if @bangel.health <= 0
-      @world.setGoalState "defeat-blue-angel", "success"
-    else if Math.round(@world.age) == @existence.lifespan 
+    if @bangel.health <= 0 and @rangel.health <= 0
+      # angels defeated at same time, break ties
+      @breakTiesGoal()
+    else if Math.round(@world.age) == @existence.lifespan
       # end of game and no angel defeated, compare angel health
       if @bangel.health > @rangel.health
-        @world.setGoalState "defeat-red-angel", "success"
+        # ogres win and humans lose
+        @world.setGoalState "protect-blue-angel", "success"
+        @world.setGoalState "protect-red-angel", "failure"
       else if @rangel.health > @bangel.health
-        @world.setGoalState "defeat-blue-angel", "success"
+        # humans win and ogres lose
+        @world.setGoalState "protect-red-angel", "success"
+        @world.setGoalState "protect-blue-angel", "failure"
       else if @rangel.health == @bangel.health
-        # angel health same, compare team gold
-        if @inventory.teamGold["humans"].earned < @inventory.teamGold["ogres"].earned
-          @world.setGoalState "defeat-red-angel", "success"
-        else if @inventory.teamGold["ogres"].earned < @inventory.teamGold["humans"].earned
-          @world.setGoalState "defeat-blue-angel", "success"
+        # angel health same, break ties
+        @breakTiesGoal()
 
+  # break ties by comparing team gold
+  breakTiesGoal: () ->
+    # Compare total team gold earned
+    if @inventory.teamGold["humans"].earned < @inventory.teamGold["ogres"].earned
+      # ogres win and humans lose
+      @world.setGoalState "protect-red-angel", "failure"
+      @world.setGoalState "protect-blue-angel", "success"
+    else if @inventory.teamGold["ogres"].earned < @inventory.teamGold["humans"].earned
+      # humans win and ogres lose
+      @world.setGoalState "protect-blue-angel", "failure"
+      @world.setGoalState "protect-red-angel", "success"
+    else if @inventory.teamGold["humans"].earned == @inventory.teamGold["ogres"].earned
+      # If total team gold the same, compare team gold available for use
+      if @inventory.goldForTeam("humans") < @inventory.goldForTeam("ogres")
+        # ogres win and humans lose
+        @world.setGoalState "protect-red-angel", "failure"
+        @world.setGoalState "protect-blue-angel", "success"
+      else if @inventory.goldForTeam("ogres") < @inventory.goldForTeam("humans")
+        # humans win and ogres lose
+        @world.setGoalState "protect-blue-angel", "failure"
+        @world.setGoalState "protect-red-angel", "success"
+      else if @inventory.goldForTeam("humans") == @inventory.goldForTeam("ogres")
+        @world.setGoalState "protect-blue-angel", "failure"
+        @world.setGoalState "protect-red-angel", "failure"
 
   # happens for every frame
   chooseAction: ->
@@ -492,7 +518,8 @@
     if not unitType or not @FRIEND_UNIT[unitType]
       throw new ArgumentError "Please specify one of the three spawnable units.", "spawn", "unitType", "spawnable", unitType
     
-    if posNumber > 5 or posNumber < 0
+    # if the input position number is invalid, throw error
+    if posNumber > 5 or posNumber < 0 or typeof posNumber is 'string'
       throw new ArgumentError "Please specify one of the number from 0-5", "spawn", "unitType", "spawnable", unitType
     
     # get the full type of the unit
@@ -501,15 +528,18 @@
 
     # Check if user has enough money to spawn units
     if @inventory.goldForTeam(team) >= @buildables[fullType].goldCost and @spawnPositionCounters[rectID] < @MAX_UNITS_PER_CELL
-      
+      # if has enough gold, spawn the unit
       unit = @createUnit(unitType, color, posNumber)
+      # record the number of spawned units in this position
       @spawnPositionCounters[rectID] += 1
       # subtract cost from user's team
       @inventory.subtractGoldForTeam team,@buildables[fullType].goldCost
       unit.startsPeaceful = false
       unit.commander = null
 
+      # record the spawned unitType
       @gameStates[color].myUnitType.push(unitType)
+      # recored the spawned unit position
       @gameStates[color].myPositions.push(posNumber)
       
  
@@ -535,9 +565,6 @@
         @inventory.subtractGoldForTeam team,cost
     
 
-
-  
-  
   # Update waves damage if user has called powerUpWaves()
   updateWaves: () ->
     # Check if user has called powerUpWaves()
