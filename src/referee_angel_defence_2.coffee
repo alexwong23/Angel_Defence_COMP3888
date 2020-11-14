@@ -164,7 +164,9 @@
 
 #################################### SET UP GAME ############################################
 
-  # set up functions player can use in the game along with set up hero properties
+  # one of the four main functions provided by CodeCombat interface
+  # function that configures the general setting for the game
+  # includes the setting up of user methods that both players can use in the game
   setupGlobal: (hero, color) ->
     # defined our user functions here, game.spawn()
     # user can call these methods from within the coding area
