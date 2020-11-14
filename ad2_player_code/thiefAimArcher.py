@@ -16,15 +16,24 @@ def attackSpawnFunction(e):
     me = e.target
     while True:
         enemy = me.findNearestEnemy()
-        if enemy:
+        if enemy and enemy.distanceTo(ownAngel) < 15: # enemy close to angel, attack!
+            me.attack(enemy)
+        elif enemy and enemy.distanceTo(ownTower) < 10: # enemy close to tower, run to angel!
+            me.move(ownAngel.pos)
+        elif enemy and me.distanceTo(enemy) < 10: # enemy close to me, run to tower!
+            me.move(ownTower.pos)
+        elif enemy:
             me.attack(enemy)
 
 def thiefAimArcherFunction(e):
     me = e.target
     while True:
         archers = me.findByType("archer", me.findEnemies())
+        thieves = me.findByType("thief", me.findFriends())
         enemy = me.findNearestEnemy()
-        if me.health < 15:
+        if thieves >= 3:
+            me.attack(enemy)
+        elif me.health < 30 or (me.distanceTo(ownTower.pos) > 50 and thieves < 3):
             if enemy and enemy.distanceTo(ownTower.pos) < 20:
                 me.attack(enemy)
             else:

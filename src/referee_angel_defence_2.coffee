@@ -148,7 +148,7 @@
     }
   }
 
-  # float variables to determine timing
+  # float variables to determine timing (time in seconds)
   POTION_HEAL: 200.0
   POTION_RESPAWN: 30.0
   NEUTRAL_RESPAWN: 15.0
@@ -164,7 +164,9 @@
 
 #################################### SET UP GAME ############################################
 
-  # set up functions player can use in the game along with set up hero properties
+  # one of the four main functions provided by CodeCombat interface
+  # function that configures the general setting for the game
+  # includes the setting up of user methods that both players can use in the game
   setupGlobal: (hero, color) ->
     # defined our user functions here, game.spawn()
     # user can call these methods from within the coding area
@@ -181,6 +183,7 @@
       spawnArray: @spawnArray.bind(@, hero, color),
       costOfSpawnArray: @costOfSpawnArray.bind(@, hero, color)
       }
+    # template code that is compulsory for any CodeCombat arena
     aether = @world.userCodeMap[hero.id]?.plan
     esperEngine = aether?.esperEngine
     if esperEngine
@@ -238,9 +241,9 @@
     @inventory = @world.getSystem "Inventory" # used to get manipulate teams' gold
 
   # one of the four main functions provided by CodeCombat interface
-  # Before the game renders, make thangs that do not have health and is not programmable not exist in the game
   # call prepareGame() to start the game process
   onFirstFrame: ->
+    # Before the game renders, make the predefined thangs outside the map not exist in the game
     for th in @world.thangs when th.health? and not th.isProgrammable
       th.setExists(false)
 
