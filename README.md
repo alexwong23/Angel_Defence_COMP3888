@@ -6,9 +6,9 @@ In our first arena, **[Angel Defence 1](https://codecombat.com/play/ladder/angel
 
 In our second arena, **[Angel Defence 2](https://codecombat.com/play/ladder/angel-defence-2)**, the player’s objective is to destroy the opponent’s base while defending their own. Players have the ability to spawn and control different types of units, including controlling their hero unit. We recommend players complete CodeCombat courses *'Computer Science 4'* to *'Computer Science 6'* before attempting the game.
 
-*To find out more, watch our (video introduction)[https://youtu.be/N307jf3RRCw] on YouTube.*
+*To find out more, watch our [video introduction](https://youtu.be/N307jf3RRCw) on YouTube.*
 
-*To learn how to play our games, please refer to our [tutorial](https://docs.google.com/document/d/1ZGqeo8FTQc6Fjt2lHEQbbbZR_z5nJzarZnVdeKpZuXI/).*
+*To learn how to play our games, please refer to our [game tutorial](https://docs.google.com/document/d/1ZGqeo8FTQc6Fjt2lHEQbbbZR_z5nJzarZnVdeKpZuXI/).*
 
 ## Member Details
 
