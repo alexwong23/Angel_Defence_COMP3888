@@ -1,3 +1,5 @@
+![alt text](https://bitbucket.org/awon6941/comp3888_t13a_group3/raw/5a621147faacdfe942a9bce4f1d553aeafdb83fe/angel_defence_knight_logo.jpg)
+
 # Angel Defence
 
 **Angel Defence** is a multi part 10-week project that consisted of not only delivering a working prototype but also formal documentation, user testing, video production but most of all, the difficulty in working with a legacy system that uses CoffeeScript. In this time period, we built two new arena levels for CodeCombat students to test their Python coding aptitude, each consisting of three levels of difficulty - easy, medium, and hard.
