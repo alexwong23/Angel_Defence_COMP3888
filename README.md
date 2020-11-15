@@ -1,74 +1,33 @@
-# COMP3888 Capstone Project #
+# Angel Defence
 
-We created two arenas on the CodeCombat platform: Angel Defence 1 & Angel Defence 2
+**Angel Defence** is a multi part 10-week project that consisted of not only delivering a working prototype but also formal documentation, user testing, video production but most of all, the difficulty in working with a legacy system that uses CoffeeScript. In this time period, we built two new arena levels for CodeCombat students to test their Python coding aptitude, each consisting of three levels of difficulty - easy, medium, and hard.
 
-# How to access our arenas as players
+In our first arena, **[Angel Defence 1](https://codecombat.com/play/ladder/angel-defence-1)**, the players’ objective is to summon different types of units to protect their base. The winner is decided as the team whose base survives the longest. We recommend players complete CodeCombat courses *'Computer Science 1'* to *'Computer Science 3'* before attempting the game.
 
-* Access Angel Defence 1:
-Click the [link](https://direct.codecombat.com/play/level/angel-defence-1)
+In our second arena, **[Angel Defence 2](https://codecombat.com/play/ladder/angel-defence-2)**, the player’s objective is to destroy the opponent’s base while defending their own. Players have the ability to spawn and control different types of units, including controlling their hero unit. We recommend players complete CodeCombat courses *'Computer Science 4'* to *'Computer Science 6'* before attempting the game.
 
-* Access Angel Defence 2:
-Click the [link](https://direct.codecombat.com/play/level/angel-defence-2)
+## Member Details
 
-# How to play our arenas
+The Angel Defence project consists of six members:
 
-* Play Angel Defence 1:  
+|    Name     |           Email            | Phone           |
+| :---------: | :------------------------: | --------------- |
+|  Daihui Yu  | dayu3519@uni.sydney.edu.au | +86 15161868041 |
+|  Alex Wong  | awon6941@uni.sydney.edu.au | +65 96629875    |
+|  Kunxi Sun  | ksun3708@uni.sydney.edu.au | +61 451925998   |
+| Rosalin Xie | rxie4977@uni.sydney.edu.au | +61 424205899   |
+| Victor Chu  | vchu3806@uni.sydney.edu.au | +61 415496072   |
+|   Xi Chen   | xche0934@uni.sydney.edu.au | +61 404156148   |
 
+## How to play
 
-        Programming language for player: Python  
+To learn how to play our games, please refer to our [tutorial](https://docs.google.com/document/d/1ZGqeo8FTQc6Fjt2lHEQbbbZR_z5nJzarZnVdeKpZuXI/) and also watch our [introduction video](https://youtu.be/N307jf3RRCw).
 
-        Target users: CS1-3 CodeCombat students
-
-        Goal: Make your angel survive longer than your opponent.
-
-        In this arena, you are allowed to spawn 3 types of
-        allies: "warrior", "archer" and "wizard"  
-
-        Use game.spawn("<unit type>",<position number>)  
-        to spawn a unit at a specific position.
-
-        you can spawn units at positions from 0 to 5.  
-
-        You have 80 gold at the beginning of the game.  
-
-        Spawn allies takes your gold!
-        Earn gold by killing enemies!
-
-* Play Angel Defence 2:  
-
-        Programming language for player: Python
-
-        Target users: CS4-6 CodecCombat students
-
-        Goal: Destroy the opponent's angel before yours is destroyed.  
-
-        In this arena, you are allowed to spawn 9 types of allies:
-            "warrior", "knight", "thief",
-            "archer", "wizard", "thrower",
-            "buffer", "warlock"
-
-        You have 50 gold at the beginning of the game.
-        Spawn allies using your gold!
-        Earn gold by killing the opponent's units or neutrals!
-
-        Methods to use:
-        - game.spawn() to spawn a unit
-        - game.setActionFor() to assign the unitType a behaviour
-
-        Additional Methods:
-        - game.spawnArray() to spawn multiple units at a discount
-        - game.changeActionFor() to change behaviour of the unitType
-        - game.changeActionForUnit() to assign the unit a behaviour
-        - game.removeActionForUnit() to remove behaviour from the unit
-        - game.setPatrolFor() to assign a patrol to the unitType
-        - game.changePatrolFor() to change the patrol for the unitType
-
-# How to access the source code (works for both arenas)
+## How to access the source code for both arenas
 
 The source code is contained in the CodeCombat level editor environment.
 
 To access the source code:
-
 1. Go to the link: https://direct.codecombat.com/editor/level.
 2. Add the name of the arena after "editor/level", for example, https://direct.codecombat.com/editor/level/angel-defence-2
 3. In the level editor, double click the "well".
