@@ -17,7 +17,7 @@ The Angel Defence project consists of six members:
 |    Name     |           Email            | Phone           |
 | :---------: | :------------------------: | --------------- |
 |  Daihui Yu  | dayu3519@uni.sydney.edu.au | +86 15161868041 |
-|  Alex Wong  | awon6941@uni.sydney.edu.au | +65 96629875    |
+|  [Alex Wong](https://github.com/alexwong23) | awon6941@uni.sydney.edu.au | +65 96629875    |
 |  Kunxi Sun  | ksun3708@uni.sydney.edu.au | +61 451925998   |
 | Rosalin Xie | rxie4977@uni.sydney.edu.au | +61 424205899   |
 | Victor Chu  | vchu3806@uni.sydney.edu.au | +61 415496072   |
