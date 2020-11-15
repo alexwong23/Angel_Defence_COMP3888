@@ -1,4 +1,4 @@
-![alt text](https://bitbucket.org/awon6941/comp3888_t13a_group3/images/raw/5a621147faacdfe942a9bce4f1d553aeafdb83fe/angel_defence_knight_logo.jpg)
+![alt text](https://bitbucket.org/awon6941/comp3888_t13a_group3/raw/927b323e4878386765d675a815fa8f3c7e00eb7c/images/angel_defence_knight_logo.jpg)
 
 # Angel Defence
 
