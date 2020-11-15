@@ -6,6 +6,10 @@ In our first arena, **[Angel Defence 1](https://codecombat.com/play/ladder/angel
 
 In our second arena, **[Angel Defence 2](https://codecombat.com/play/ladder/angel-defence-2)**, the player’s objective is to destroy the opponent’s base while defending their own. Players have the ability to spawn and control different types of units, including controlling their hero unit. We recommend players complete CodeCombat courses *'Computer Science 4'* to *'Computer Science 6'* before attempting the game.
 
+*To find out more, watch our (video introduction)[https://youtu.be/N307jf3RRCw] on YouTube.*
+
+*To learn how to play our games, please refer to our [tutorial](https://docs.google.com/document/d/1ZGqeo8FTQc6Fjt2lHEQbbbZR_z5nJzarZnVdeKpZuXI/).*
+
 ## Member Details
 
 The Angel Defence project consists of six members:
@@ -19,15 +23,12 @@ The Angel Defence project consists of six members:
 | Victor Chu  | vchu3806@uni.sydney.edu.au | +61 415496072   |
 |   Xi Chen   | xche0934@uni.sydney.edu.au | +61 404156148   |
 
-## How to play
-
-To learn how to play our games, please refer to our [tutorial](https://docs.google.com/document/d/1ZGqeo8FTQc6Fjt2lHEQbbbZR_z5nJzarZnVdeKpZuXI/) and also watch our [introduction video](https://youtu.be/N307jf3RRCw).
-
 ## How to access the source code for both arenas
 
 The source code is contained in the CodeCombat level editor environment.
 
 To access the source code:
+
 1. Go to the link: https://direct.codecombat.com/editor/level.
 2. Add the name of the arena after "editor/level", for example, https://direct.codecombat.com/editor/level/angel-defence-2
 3. In the level editor, double click the "well".
