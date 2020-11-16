@@ -59,20 +59,11 @@
       attackCooldown: 0.7,
       attackRange: 10,
       speed: 50
-    },
-    headhunter: {
-      health: 80,
-      damage: 12,
-      attackCooldown: 1,
-      attackRange: 5,
-      speed: 50
     }
   }
   
   # bounty for killing an enemy
   ENEMY_BOUNTY: 10
-  # max number of units allowed
-  MAX_UNITS: 18
   # max number of units per cell position
   MAX_UNITS_PER_CELL: 3
   # game timeout seconds to clear the spawn positions and spawn neutrals
@@ -111,42 +102,47 @@
       levelUpAllies: @powerWaves.bind(@, hero, color)
       }
 
-    # From the Battle of Red Cliff template, required by the game to run
+    #Because our arena is forked from the Battle of Red Cliff, 
+    #This part of code is required by the game to run
     aether = @world.userCodeMap[hero.id]?.plan
     esperEngine = aether?.esperEngine
     if esperEngine
       esperEngine.options.foreignObjectMode = 'smart'
       esperEngine.options.bookmarkInvocationMode = "loop"
       esperEngine.addGlobal?('game', game)
-
+  
   # initialize and set up the postion for spawning on both sides
   # get spawn positions by id and append of them to a list
   setSpawnPositions: ->
-    @spawnPositions = []
-    @spawnPositionCounters = {}
-    @redSpawnPositions = []
-    @blueSpawnPositions = []
-    @greenSpawnPositions = []
+    @spawnPositions = []  #all the spawn squares including red square(0-5), and blue square(0-5)
+    @spawnPositionCounters = {} #count the number of unit in the square
+    @redSpawnPositions = [] #red spawn square(0-5)
+    @blueSpawnPositions = [] #blue spawn square(0-5)
+    @greenSpawnPositions = [] #the two green netural spawn saqure on map
 
-    # 6 positions on red side
+    # Read red spawn squares and push in redSpawnPositions
     for i in [0..5]
       th = @world.getThangByID("pos-red-" + i)
       th.index = i
       @redSpawnPositions.push(th)
 
-    # 6 positions on blue side
+    # Read blue spawn squares and push in blueSpawnPositions
     for i in [0..5]
       th = @world.getThangByID("pos-blue-" + i)
       th.index = i
       @blueSpawnPositions.push(th)
 
-    # 2 positions for spawning enemies
+    # Read green spawn squares and push in greenSpawnPositions
     for i in [0..1]
       th = @world.getThangByID("pos-green-" + i)
       th.index = i
       @greenSpawnPositions.push(th)
+      
+    #combine all the spawn position in spawnPositions
     @redBluePositions = @redSpawnPositions.concat(@blueSpawnPositions)
     @spawnPositions = @redBluePositions.concat(@greenSpawnPositions)
+    
+    #Let the saqure can display their index, and adjust its transparency
     for th in @spawnPositions
       th.setExists(true)
       th.say?(th.index)
@@ -157,9 +153,10 @@
   # Setting of the level
   # Setting up Thangs information
   setUpLevel: ->
-    @rangel = @world.getThangByID("Red Angel")
-    @bangel = @world.getThangByID("Blue Angel")
-    @ref = @world.getThangByID("ref")
+    @rangel = @world.getThangByID("Red Angel")  #read red angel from map
+    @bangel = @world.getThangByID("Blue Angel")  #read blue angel from map
+    @ref = @world.getThangByID("ref")   #read ref angel from map
+    
     @actionHelpers = {
       "red": {}
       "blue": {}
@@ -168,23 +165,22 @@
       "red": {}
       "blue": {}
     }
-    #try
     @setSpawnPositions()
     @unitCounter = {}
-    @setupGlobal(@hero, "red")
-    @setupGlobal(@hero2, "blue")
+    @setupGlobal(@hero, "red")  #set up the global for red side hero
+    @setupGlobal(@hero2, "blue")  #set up the global for blue side hero
     @ref.say("Battle start!")
-    @hero.isAttackable = false
-    @hero2.isAttackable = false
-    @inventory = @world.getSystem 'Inventory'
-    @waveCtr = 0
-    @redNeutral = []
-    @blueNeutral = []
-    @redUnits = []
-    @blueUnits = []
-    @gameStart = false
+    @hero.isAttackable = false #set the red side hero is not attackable
+    @hero2.isAttackable = false  #set the blue side hero is not attackable
+    @inventory = @world.getSystem 'Inventory' #get the inventory from world, and use it to adjust gold
+    @waveCtr = 0 # count the netural spawn waves
+    @redNeutral = [] # store the red side enemy
+    @blueNeutral = [] # store the blue side enemy
+    @redUnits = [] # store the allies of red side
+    @blueUnits = [] # store the allies of blue side
+    @gameStart = false #record the game is started or not started
     
-    # store information from user input
+    # store allies type and their positions from user input
     @gameStates = {
       red: {
         myUnitType:[],
@@ -200,6 +196,7 @@
   # only happens in the first frame
   # Before the game renders, make thangs that do not have health and is not programmable not exist in the game
   onFirstFrame: ->
+    #set unrelated thangs exists as false
     for th in @world.thangs when th.health? and not th.isProgrammable
       th.setExists(false)
 
@@ -217,12 +214,22 @@
     @hero2.keepTrackedProperty("health")
     @hero2.keepTrackedProperty("maxHealth")
     
+    #NOTE: we got some issues when we implement the spawn function used by player.
+    #The issue is when player use spawn outside while loop, the units is not spawned,
+    #but their function is actually called. This is due to that the player's code is
+    #already invokded before the game is loaded. To solve this, we have check spawn function.
+    #We store the allies type and allies positions in gameState, and checkSpawn will spawn the
+    #units which is not actual spawn at the beginning of game
     @checkSpawn("red")
     @checkSpawn("blue")
     
-    #clear spawn position
+    #clear spawn position(blue sqaures, red squares, and green squares)
     @setTimeout(@invisibleSpawnPos.bind(@), @TIME_OUT_SEC)
+    
+    #Set gameStart as true
     @setTimeout(@setGameStart.bind(@), @TIME_OUT_SEC)
+    
+    #start to spawn neturals(enemies)
     @spawnNeutrals()
   
   # check for a winner in the allocated game time
@@ -273,16 +280,20 @@
         @world.setGoalState "protect-blue-angel", "failure"
         @world.setGoalState "protect-red-angel", "failure"
 
-  # happens for every frame
+  #This is a 'tick' function which is executed in a while loop.
   chooseAction: ->
     if @gameStart
       if (@world.age % @NEUTRAL_SPAWN_RATE)==0
-        @spawnNeutrals()
-      @updateWaves()
-      @checkDeath()
-      @checkWinner()
+        @spawnNeutrals()   #spawn the neutral enemies
+      @updateWaves()  #update the allies' damage if user called levelUpAllies
+      @checkDeath()  #check if there are any enemy died
+      @checkWinner() #check if any player win
 
-      #Update health
+      #Note: The health bar is actually to display the health of hero,
+      #However, in Angel defence 1, we do not have the concept of hero.
+      #Therefore, the hp bar is used to track the health of angel. We make
+      #the hero keep track of the health of angle to display the angel's health
+      #in health bar
       @hero.health = @rangel.health
       @hero.keepTrackedProperty("health")
       @hero2.health = @bangel.health
@@ -360,7 +371,6 @@
         [0, 'fmunchkin']
         [50, 'mmunchkin']
         [85, 'brawler']
-        [99, 'headhunter']
       ]
       r = @world.rand.randf() * 100
       for [spawnChance, type] in spawnChances
@@ -462,7 +472,7 @@
   setGameStart:()->
     @gameStart = true
 
-  # Check the death of enemies
+  # Check if there are any enemies died, and update the gold of player
   checkDeath: () ->
     # Check if red team has killed an enemy (neutral)
     for unit in @redNeutral
@@ -502,7 +512,7 @@
 
 #################################### USER FUNCTIONS ############################################
 
-
+  # Player's function: game.spawn()
   # allows users to spawn a unit on the command game.spawn(unitType, posNumber) when the game starts
   # deducts gold from the team
   # assigns unit a team and commander and push it to the units array
@@ -543,7 +553,7 @@
       @gameStates[color].myPositions.push(posNumber)
       
  
-  
+  # Player's function: game.costOf()
   # Allow user to get the cost of spawning certain type of unit
   getCostOf:(hero,color,unitType)->
     fullType = "#{unitType}-#{color}"
