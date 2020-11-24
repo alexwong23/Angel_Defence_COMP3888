@@ -4,33 +4,44 @@ AVAILABLE = ["archer", "warrior", "wizard"]
 # Use game.spawn(<unitType>, <position_number>) to summon your unit.
 # They are "auto chess"! You don't need to control their action.
 
-unitNum = 0
+#Constants
+TOTAL_SPAWN_NUMBER = 16
 
-archerCost = game.costOf("archer")
-warriorCost = game.costOf("warrior")
-wizardCost = game.costOf("wizard")
+#warrior spawn position configuration
+WARRIOR_SPAWN_NUMBER = 8
 
+#warrior and archer spawn position configuration
+WARRIOR_SPAWN_START_POS = 4
+WARRIOR_SPAWN_POS_NUM = 2
+ARCHER_SPAWN_POS_NUM = 4
+
+#spend all initial 80 gold here
+for i in range(0,4):
+    game.spawn("wizard",i)
+game.spawn("warrior",0)
+game.spawn("warrior",1)
+
+#unit number start with 6
+unitNum = 6
+archerCtr = 0
+wizardCtr = 4
+warriorCtr = 2
+
+#initila the spawn position of units which will be spawned in while loop
 archerSpawnPos = 0
 warriorSpawnPos = 4
-wizardSpawnPos = 0
 
 while True:
-    if unitNum >= 18:
-        game.levelUpAllies(game.gold)
+    if unitNum >= TOTAL_SPAWN_NUMBER:
+        game.levelUpAllies(game.gold())
     else:
-        game.log(game.gold() + " check "+game.costOf("archer"))
-        if game.gold() > archerCost:
-            if archerSpawnPos < 6:
-                game.spawn("archer", archerSpawnPos % 6)
-                archerSpawnPos += 1
-                unitNum += 1
-        elif game.gold() > warriorCost:
-            if warriorSpawnPos < 6:
-                game.spawn("warrior", warriorSpawnPos % 6)
-                warriorSpawnPos += 1
-                unitNum += 1
-        elif game.gold() > wizardCost:
-            if wizardSpawnPos < 4:
-                game.spawn("wizard", wizardSpawnPos % 6)
-                wizardSpawnPos += 1
-                unitNum += 1
+        if game.gold() >= game.costOf("warrior") and warriorCtr<WARRIOR_SPAWN_NUMBER:
+            game.spawn("warrior", warriorSpawnPos%WARRIOR_SPAWN_POS_NUM+WARRIOR_SPAWN_START_POS)
+            warriorSpawnPos+=1
+            warriorCtr+=1
+            unitNum+=1
+        elif game.gold() >= game.costOf("archer") and warriorCtr>=WARRIOR_SPAWN_NUMBER:
+            game.spawn("archer", archerSpawnPos%ARCHER_SPAWN_POS_NUM)
+            archerSpawnPos += 1
+            archerCtr+=1;
+            unitNum += 1
