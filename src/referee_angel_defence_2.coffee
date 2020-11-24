@@ -184,6 +184,7 @@
       costOfSpawnArray: @costOfSpawnArray.bind(@, hero, color)
       }
     # template code that is compulsory for any CodeCombat arena
+    # adds a global object s.t. it is accessible to the user code
     aether = @world.userCodeMap[hero.id]?.plan
     esperEngine = aether?.esperEngine
     if esperEngine
