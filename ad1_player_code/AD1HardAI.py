@@ -45,4 +45,3 @@ while True:
             archerSpawnPos += 1
             archerCtr+=1;
             unitNum += 1
-
